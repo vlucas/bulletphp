@@ -57,9 +57,30 @@ class AppTest extends \PHPUnit_Framework_TestCase
             return 'test';
         });
 
-        $collect = $app->run('GET', '/test/foo/bar/');
+        $collect = $app->run('GET', '/test/foo/');
 
         $expect = array('test', 'foo');
+        $this->assertEquals($collect, $expect);
+    }
+
+    public function testNonmatchingPathRunReturnsBooleanFalse()
+    {
+        $collect = array();
+
+        $app = new Bullet\App();
+        $app->path('test', function($request) use($app, &$collect) {
+            $app->path('foo', function() use(&$collect) {
+                return 'foo';
+            });
+            $app->path('foo2', function() use(&$collect) {
+                return 'foo2';
+            });
+            return 'test';
+        });
+
+        $collect = $app->run('GET', '/test/foo/bar/');
+
+        $expect = false;
         $this->assertEquals($collect, $expect);
     }
 

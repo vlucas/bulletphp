@@ -38,8 +38,14 @@ class App
             $lastPath .= '/' . $path;
             $this->_paths[] = $lastPath;
 
-            // Run
-            $response[] = $this->_runPath($method, $path);
+            // Run and get result
+            $res = $this->_runPath($method, $path);
+            $response[] = $res;
+
+            // If ANY path callback returns boolean false, return false here
+            if($res === false) {
+                return false;
+            }
         }
 
         return $response;
@@ -77,6 +83,9 @@ class App
             $res = call_user_func($cb, $this->request(), $param);
             return $res;
         }
+
+        // Return boolean false (404 - path not matched)
+        return false;
     }
 
     /**
@@ -122,8 +131,10 @@ class App
      */
     public function call($env)
     {
-        echo $env['PATH_INFO'];
         $body = $this->run($env['REQUEST_METHOD'], $env['PATH_INFO']);
+        if($body === false) {
+            return array(404, array(), 'Not Found');
+        }
         return array(200, array(), $body);
     }
 }

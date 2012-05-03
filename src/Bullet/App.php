@@ -11,12 +11,15 @@ class App
 
     public function path($path, \Closure $callback)
     {
+        $path = trim($path, '/');
         $this->_callbacks['path'][$path] = $callback;
+        return $this;
     }
 
     public function param($param, \Closure $callback)
     {
         $this->_callbacks['param'][$param] = $callback;
+        return $this;
     }
 
     /** 
@@ -24,6 +27,7 @@ class App
      */
     public function run($method, $uri)
     {
+        $response = array();
         $this->_requestMethod = strtoupper($method);
         $this->_currentPath = $uri;
 
@@ -34,9 +38,11 @@ class App
             $lastPath .= '/' . $path;
             $this->_paths[] = $lastPath;
 
-            // Run 
-            $this->_runPath($method, $path);
+            // Run
+            $response[] = $this->_runPath($method, $path);
         }
+
+        return $response;
     }
 
     /**
@@ -95,8 +101,9 @@ class App
     public function get(\Closure $callback)
     {
         if($this->_requestMethod === 'GET') {
-            return $this->_runPath($this->_requestMethod, $this->currentPath(), $callback);
+            $this->_runPath($this->_requestMethod, $this->currentPath(), $callback);
         }
+        return $this;
     }
 
     /**
@@ -105,7 +112,18 @@ class App
     public function post(\Closure $callback)
     {
         if($this->_requestMethod === 'POST') {
-            return $this->_runPath($this->_requestMethod, $this->currentPath(), $callback);
+            $this->_runPath($this->_requestMethod, $this->currentPath(), $callback);
         }
+        return $this;
+    }
+
+    /**
+     * Implementing for Rackem\Rack (PHP implementation of Rack)
+     */
+    public function call($env)
+    {
+        echo $env['PATH_INFO'];
+        $body = $this->run($env['REQUEST_METHOD'], $env['PATH_INFO']);
+        return array(200, array(), $body);
     }
 }

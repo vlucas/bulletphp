@@ -2,7 +2,7 @@
 use \Rackem\Rack;
 
 require __DIR__ . '/src/Bullet/App.php';
-require 'vendor/autoload.php';
+require __DIR__ . '/vendor/autoload.php';
 
 // Bullet App
 $app = new Bullet\App();

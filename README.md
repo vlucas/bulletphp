@@ -31,6 +31,42 @@ Rules
    logic should be contained in `get`, `post`, or other method callbacks
    or in the model layer (and not in the bare `path` handlers).
 
+Deploying to Heroku
+-------------------
+
+Install the Heroku gem:
+```
+gem install heroku
+```  
+
+Create your Heroku app (cedar stack):
+```
+heroku create <appname> --stack cedar
+```
+
+Run this command (Only ONCE):
+```
+heroku config:add LD_LIBRARY_PATH=/app/php/ext:/app/apache/lib
+```
+
+Start a bash shell on your Heroku app server:
+```
+heroku run bash
+```
+
+Run the commands to download [Composer](http://getcomposer.org) and run the installer
+```
+cd www
+curl -s http://getcomposer.org/installer | ~/php/bin/php
+~/php/bin/php composer.phar install
+```
+
+Open your app (you may have to re-push to deploy again)
+```
+heroku open
+```
+
+
 Credits
 -------
 

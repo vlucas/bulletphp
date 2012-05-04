@@ -55,8 +55,6 @@ php composer.phar install
 Write code for your app (use the minimal example below to get started)
 ```
 <?php
-use \Rackem\Rack;
-
 require __DIR__ . '/src/Bullet/App.php';
 require __DIR__ . '/vendor/autoload.php';
 
@@ -66,9 +64,8 @@ $app->path('/', function($request) {
     return "Hello World!";
 });
 
-// Rack it up!
-Rack::use_middleware("\Rackem\ShowExceptions");
-Rack::run($app);
+// Run the app! (method, url)
+echo $app->run($_SERVER['HTTP_METHOD'], $_SERVER['REQUEST_URI']);
 ```
 
 View it in your browser!
@@ -130,45 +127,40 @@ $app->path('blog', function($request) use($app) {
 echo $app->run("GET", "blog/posts");
 ```
 
-Deploying to Heroku
--------------------
+Using Rackem
+------------
 
-Install the Heroku gem:
-```
-gem install heroku
-```  
+Bullet can be optionally used with Rackem for greater extensibility if you
+want to use middleware with your app. No code changes are required for
+your app.
 
-Create your Heroku app (cedar stack):
-```
-heroku create <appname> --stack cedar
-```
+The primary change is simply calling `Rack::run($app)` instead of
+directly calling `$app->run($method, $url)` in your index.php file. This
+will run your app through Rack so you can plugin and use custom
+middleware more easily.
 
-Run this command (Only ONCE):
 ```
-heroku config:add LD_LIBRARY_PATH=/app/php/ext:/app/apache/lib
-```
+<?php
+use \Rackem\Rack;
 
-Start a bash shell on your Heroku app server:
-```
-heroku run bash
-```
+require __DIR__ . '/src/Bullet/App.php';
+require __DIR__ . '/vendor/autoload.php';
 
-Run the commands to download [Composer](http://getcomposer.org) and run the installer
-```
-cd www
-curl -s http://getcomposer.org/installer | ~/php/bin/php
-~/php/bin/php composer.phar install
-```
+// Your App
+$app = new Bullet\App();
+$app->path('/', function($request) {
+    return "Hello World!";
+});
 
-Open your app (you may have to re-push to deploy again)
+// Rack it up!
+Rack::use_middleware("\Rackem\ShowExceptions");
+Rack::run($app);
 ```
-heroku open
-```
-
 
 Credits
 -------
 
-Bullet leverages [Rackem](https://github.com/tamagokun/rackem) (PHP
-implementation of Ruby's Rack) to make using middleware a breeze.
+Bullet optionally uses [Rackem](https://github.com/tamagokun/rackem)
+(PHP implementation of Ruby's Rack) to make using middleware a
+breeze.
 

@@ -1,11 +1,6 @@
 <?php
 class AppTest extends \PHPUnit_Framework_TestCase
 {
-    public function testSomething()
-    {
-        $this->assertTrue(true);
-    }
-
     public function testSinglePathGet()
     {
         $collect = array();
@@ -94,17 +89,17 @@ class AppTest extends \PHPUnit_Framework_TestCase
             $app->path('foo', function() use($app, &$collect) {
                 $collect[] = 'foo';
                 $app->get(function() use(&$collect) {
-                    $collect[] = 'GET';
+                    $collect[] = 'get';
                 });
                 $app->post(function() use(&$collect) {
-                    $collect[] = 'POST';
+                    $collect[] = 'post';
                 });
             });
         });
 
-        $app->run('POST', '/test/foo/');
+        $app->run('post', '/test/foo/');
 
-        $expect = array('test', 'foo', 'POST');
+        $expect = array('test', 'foo', 'post');
         $this->assertEquals($collect, $expect);
     }
 

@@ -105,7 +105,7 @@ class App
     }
 
     /**
-     *
+     * Handle GET method
      */
     public function get(\Closure $callback)
     {
@@ -116,11 +116,33 @@ class App
     }
 
     /**
-     *
+     * Handle POST method
      */
     public function post(\Closure $callback)
     {
         if($this->_requestMethod === 'POST') {
+            $this->_runPath($this->_requestMethod, $this->currentPath(), $callback);
+        }
+        return $this;
+    }
+    
+    /**
+     * Handle PUT method
+     */
+    public function put(\Closure $callback)
+    {
+        if($this->_requestMethod === 'PUT') {
+            $this->_runPath($this->_requestMethod, $this->currentPath(), $callback);
+        }
+        return $this;
+    }
+
+    /**
+     * Handle DELETE method
+     */
+    public function delete(\Closure $callback)
+    {
+        if($this->_requestMethod === 'DELETE') {
             $this->_runPath($this->_requestMethod, $this->currentPath(), $callback);
         }
         return $this;

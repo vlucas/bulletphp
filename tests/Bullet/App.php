@@ -141,4 +141,17 @@ class AppTest extends \PHPUnit_Framework_TestCase
         $expect = array('matched', 'me');
         $this->assertEquals($collect, $expect);
     }
+
+    public function testNonExistentPathReturnsFalse()
+    {
+        $app = new Bullet\App();
+        $app->path('/', function($request) use($app) {
+            return 'notmatched';
+        });
+
+        $actual = $app->run('GET', '/blahblah');
+        $expected = false;
+
+        $this->assertEquals($actual, $expected);
+    }
 }

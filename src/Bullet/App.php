@@ -6,7 +6,10 @@ class App
     protected $_paths = array();
     protected $_requestMethod;
     protected $_curentPath;
-    protected $_callbacks = array();
+    protected $_callbacks = array(
+      'path' => array(),
+      'param' => array()
+    );
 
 
     public function path($path, \Closure $callback)

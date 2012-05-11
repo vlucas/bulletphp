@@ -30,7 +30,7 @@ class App
      */
     public function run($method, $uri)
     {
-        $response = array();
+        $response = false;
         $this->_requestMethod = strtoupper($method);
         $this->_currentPath = $uri;
 
@@ -43,12 +43,7 @@ class App
 
             // Run and get result
             $res = $this->_runPath($method, $path);
-            $response[] = $res;
-
-            // If ANY path callback returns boolean false, return false here
-            if($res === false) {
-                return false;
-            }
+            $response = $res;
         }
 
         return $response;

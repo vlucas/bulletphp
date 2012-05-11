@@ -54,7 +54,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
 
         $collect = $app->run('GET', '/test/foo/');
 
-        $expect = array('test', 'foo');
+        $expect = 'foo';
         $this->assertEquals($collect, $expect);
     }
 

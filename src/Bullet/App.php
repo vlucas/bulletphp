@@ -5,48 +5,104 @@ class App
 {
     protected $_paths = array();
     protected $_requestMethod;
+    protected $_requestPath;
     protected $_curentPath;
     protected $_callbacks = array(
       'path' => array(),
-      'param' => array()
+      'param' => array(),
+      'method' => array()
     );
 
 
     public function path($path, \Closure $callback)
     {
         $path = trim($path, '/');
-        $this->_callbacks['path'][$path] = $callback;
+        $this->_callbacks['path'][$path] = $this->_prepClosure($callback);
         return $this;
     }
 
     public function param($param, \Closure $callback)
     {
-        $this->_callbacks['param'][$param] = $callback;
+        $this->_callbacks['param'][$param] = $this->_prepClosure($callback);
         return $this;
     }
 
-    /** 
-     * Run app with given HTTP_METHOD and REQUEST_URI
+    /**
+     * Prep closure callback by binding context in PHP >= 5.4
      */
-    public function run($method, $uri)
+    protected function _prepClosure(\Closure $closure)
+    {
+        // Bind local context for PHP >= 5.4
+        if (version_compare(PHP_VERSION, '5.4.0') >= 0) {
+            $closure->bindTo($this);
+        }
+        return $closure;
+    }
+
+    /**
+     * Run app with given REQUEST_METHOD and REQUEST_URI
+     *
+     * @param string|object $method HTTP request method string or \Bullet\Request object
+     * @param string optional $uri URI/path to run
+     */
+    public function run($method, $uri = null)
     {
         $response = false;
-        $this->_requestMethod = strtoupper($method);
-        $this->_currentPath = $uri;
+
+        if($method instanceof \Bullet\Request) {
+            $request = $method;
+            $this->_requestMethod = strtoupper($request->method());
+            $this->_requestPath = $request->url();
+        } else {
+            $this->_requestMethod = strtoupper($method);
+            $this->_requestPath = $uri;
+        }
+
+        // Normalize request path
+        $this->_requestPath = trim($this->_requestPath, '/');
 
         // Explode by path without leading or trailing slashes
-        $paths = explode('/', trim($uri, '/'));
-        $lastPath = '';
-        foreach($paths as $path) {
-            $lastPath .= '/' . $path;
-            $this->_paths[] = $lastPath;
+        $paths = explode('/', $this->_requestPath);
+        foreach($paths as $pos => $path) {
+            $this->_currentPath = implode('/', array_slice($paths, 0, $pos+1));
 
             // Run and get result
-            $res = $this->_runPath($method, $path);
+            $res = $this->_runPath($this->_requestMethod, $path);
             $response = $res;
         }
 
+        // Ensure response is always a Bullet\Response
+        if($response === false) {
+            $response = $this->response(null, 404);
+        } else {
+            if(!($response instanceof \Bullet\Response)) {
+                $response = $this->response($response);
+            }
+        }
+
         return $response;
+    }
+
+    /**
+     * Determine if the currently executing path is the full requested one
+     */
+    public function isRequestPath()
+    {
+        return $this->_currentPath === $this->_requestPath;
+    }
+
+    /**
+     * Send HTTP response with status code and content
+     */
+    public function response($content = null, $statusCode = 200)
+    {
+        $res = new \Bullet\Response($content, $statusCode);
+
+        // If content not set, use default HTTP
+        if($content === null) {
+            $res->content($res->statusText($statusCode));
+        }
+        return $res;
     }
 
     /**
@@ -54,9 +110,6 @@ class App
      */
     protected function _runPath($method, $path, \Closure $callback = null)
     {
-        // Set current path as one about to run
-        $this->_currentPath = $path;
-
         // Use $callback param if set (always overrides)
         if($callback !== null) {
             $res = call_user_func($callback, $this->request());
@@ -67,6 +120,23 @@ class App
         if(isset($this->_callbacks['path'][$path])) {
             $cb = $this->_callbacks['path'][$path];
             $res = call_user_func($cb, $this->request());
+
+            // Run 'method' callbacks if the path is the full requested one
+            if($this->isRequestPath()) {
+                // If there are ANY method callbacks, use if matches method, return 405 if not
+                // If NO method callbacks are present, path return value will be used, or 404
+                if(count($this->_callbacks['method']) > 0) {
+                    if(isset($this->_callbacks['method'][$method])) {
+                        $cb = $this->_callbacks['method'][$method];
+                        $res = call_user_func($cb, $this->request());
+                    } else {
+                        $res = $this->response(null, 405);
+                    }
+                }
+            } else {
+                // Empty out collected method callbacks
+                $this->_callbacks['method'] = array();
+            }
             return $res;
         }
 
@@ -95,7 +165,7 @@ class App
     }
 
     /**
-     *
+     * Getter for current path
      */
     public function currentPath()
     {
@@ -107,10 +177,7 @@ class App
      */
     public function get(\Closure $callback)
     {
-        if($this->_requestMethod === 'GET') {
-            $this->_runPath($this->_requestMethod, $this->currentPath(), $callback);
-        }
-        return $this;
+        return $this->method('GET', $callback);
     }
 
     /**
@@ -118,21 +185,15 @@ class App
      */
     public function post(\Closure $callback)
     {
-        if($this->_requestMethod === 'POST') {
-            $this->_runPath($this->_requestMethod, $this->currentPath(), $callback);
-        }
-        return $this;
+        return $this->method('POST', $callback);
     }
-    
+
     /**
      * Handle PUT method
      */
     public function put(\Closure $callback)
     {
-        if($this->_requestMethod === 'PUT') {
-            $this->_runPath($this->_requestMethod, $this->currentPath(), $callback);
-        }
-        return $this;
+        return $this->method('PUT', $callback);
     }
 
     /**
@@ -140,9 +201,18 @@ class App
      */
     public function delete(\Closure $callback)
     {
-        if($this->_requestMethod === 'DELETE') {
-            $this->_runPath($this->_requestMethod, $this->currentPath(), $callback);
-        }
+        return $this->method('DELETE', $callback);
+    }
+
+    /**
+     * Handle HTTP method
+     *
+     * @param string $method HTTP method to handle for
+     * @param \Closure $callback Closure to execute to handle specified HTTP method
+     */
+    public function method($method, \Closure $callback)
+    {
+        $this->_callbacks['method'][strtoupper($method)] = $this->_prepClosure($callback);
         return $this;
     }
 
@@ -151,10 +221,7 @@ class App
      */
     public function call($env)
     {
-        $body = $this->run($env['REQUEST_METHOD'], $env['PATH_INFO']);
-        if($body === false) {
-            return array(404, array(), 'Not Found');
-        }
-        return array(200, array(), $body);
+        $response = $this->run($env['REQUEST_METHOD'], $env['PATH_INFO']);
+        return array($response->status(), $response->headers(), $response->content());
     }
 }

@@ -52,13 +52,13 @@ class AppTest extends \PHPUnit_Framework_TestCase
             return 'test';
         });
 
-        $collect = $app->run('GET', '/test/foo/');
+        $collect = (string) $app->run('GET', '/test/foo/');
 
         $expect = 'foo';
         $this->assertEquals($collect, $expect);
     }
 
-    public function testNonmatchingPathRunReturnsBooleanFalse()
+    public function testNonmatchingPathRunReturns404()
     {
         $collect = array();
 
@@ -73,10 +73,10 @@ class AppTest extends \PHPUnit_Framework_TestCase
             return 'test';
         });
 
-        $collect = $app->run('GET', '/test/foo/bar/');
+        $actual = $app->run('GET', '/test/foo/bar/');
+        $expected = 404;
 
-        $expect = false;
-        $this->assertEquals($collect, $expect);
+        $this->assertEquals($expected, $actual->status());
     }
 
     public function testDoublePathPostOnly()
@@ -99,8 +99,8 @@ class AppTest extends \PHPUnit_Framework_TestCase
 
         $app->run('post', '/test/foo/');
 
-        $expect = array('test', 'foo', 'post');
-        $this->assertEquals($collect, $expect);
+        $expected = array('test', 'foo', 'post');
+        $this->assertEquals($expected, $collect);
     }
 
     public function testRootPathGet()
@@ -117,8 +117,8 @@ class AppTest extends \PHPUnit_Framework_TestCase
 
         $app->run('GET', '/');
 
-        $expect = array('root');
-        $this->assertEquals($collect, $expect);
+        $expected = array('root');
+        $this->assertEquals($expected, $collect);
     }
 
     public function testLeadingAndTrailingSlashesInPathGetStripped()
@@ -138,20 +138,138 @@ class AppTest extends \PHPUnit_Framework_TestCase
 
         $app->run('GET', 'match/me');
 
-        $expect = array('matched', 'me');
-        $this->assertEquals($collect, $expect);
+        $expected = array('matched', 'me');
+        $this->assertEquals($expected, $collect);
     }
 
-    public function testNonExistentPathReturnsFalse()
+    public function testHelperIsRequestPathReturnsTrueWhenPathIsCurrent()
     {
         $app = new Bullet\App();
-        $app->path('/', function($request) use($app) {
-            return 'notmatched';
+        $app->path('test', function($request) use($app, &$collect) {
+            return var_export($app->isRequestPath(), true);
         });
 
-        $actual = $app->run('GET', '/blahblah');
-        $expected = false;
+        $actual = $app->run('GET', '/test/');
+        $this->assertEquals('true', $actual->content());
+    }
 
-        $this->assertEquals($actual, $expected);
+    public function testHelperIsRequestPathReturnsFalseWhenPathIsNotCurrent()
+    {
+        $actual = array();
+
+        $app = new Bullet\App();
+        $app->path('foo', function($request) use($app, &$actual) {
+            // Should be 'false' - "foo" is not the full requested path, "foo/bar" is
+            $actual[] = var_export($app->isRequestPath(), true);
+
+            $app->path('bar', function($request) use($app) {
+                return 'anything at all';
+            });
+        });
+
+        $app->run('GET', 'foo/bar');
+        $this->assertEquals(array('false'), $actual);
+    }
+
+    public function testStringReturnsBulletResponseInstanceWith200StatusCodeAndCorrectContent()
+    {
+        $collect = array();
+
+        $app = new Bullet\App();
+        $app->path('test', function($request) use($app, &$collect) {
+            return 'test';
+        });
+
+        $actual = $app->run('GET', '/test/');
+        $this->assertInstanceOf('\Bullet\Response', $actual);
+        $this->assertEquals(200, $actual->status());
+        $this->assertEquals('test', $actual->content());
+    }
+
+    public function testOnlyLastMatchedCallbackIsReturned()
+    {
+        $app = new Bullet\App();
+        $app->path('test', function($request) use($app) {
+            $app->path('teapot', function($request) use($app) {
+                // GET
+                $app->get(function($request) use($app) {
+                    // Should be returned
+                    return $app->response("Teapot", 418);
+                });
+
+                // Should not be returned
+                return 'Nothing to see here...';
+            });
+            return 'test';
+        });
+
+        $actual = $app->run('GET', '/test/teapot');
+        $this->assertInstanceOf('\Bullet\Response', $actual);
+        $this->assertEquals('Teapot', $actual->content());
+        $this->assertEquals(418, $actual->status());
+    }
+
+    public function testMethodHandlersNotInFullPathDoNotGetExecuted()
+    {
+        $actual = array();
+
+        $app = new Bullet\App();
+        $app->path('test', function($request) use($app, &$actual) {
+            $app->path('teapot', function($request) use($app, &$actual) {
+                // Should be executed
+                $app->get(function($request) use($app, &$actual) {
+                    $actual[] = 'teapot';
+                });
+            });
+
+            // Should NOT be executed (not FULL path)
+            $app->get(function($request) use($app, &$actual) {
+                $actual[] = 'notateapot';
+            });
+        });
+
+        $app->run('GET', '/test/teapot');
+        $this->assertEquals(array('teapot'), $actual);
+    }
+
+    public function testPathMethodCallbacksDoNotCarryOverIntoNextPath()
+    {
+        $actual = array();
+
+        $app = new Bullet\App();
+        $app->path('test', function($request) use($app, &$actual) {
+            $app->path('method', function($request) use($app, &$actual) {
+                // Should not be executed (not POST)
+                $app->get(function($request) use($app, &$actual) {
+                    $actual[] = 'get';
+                });
+            });
+
+            // Should NOT be executed (not FULL path)
+            $app->post(function($request) use($app, &$actual) {
+                $actual[] = 'post';
+            });
+        });
+
+        $response = $app->run('post', 'test/method');
+        $this->assertEquals(array(), $actual);
+    }
+
+    public function testIfPathExistsAndMethodCallbackDoesNotResponseIs405()
+    {
+        $app = new Bullet\App();
+        $app->path('methodnotallowed', function($request) use($app) {
+            // GET
+            $app->get(function($request) use($app) {
+                return 'get';
+            });
+            // POST
+            $app->post(function($request) use($app) {
+                return 'post';
+            });
+        });
+
+        $response = $app->run('PUT', 'methodnotallowed');
+        $this->assertEquals(405, $response->status());
     }
 }

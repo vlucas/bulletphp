@@ -272,4 +272,70 @@ class AppTest extends \PHPUnit_Framework_TestCase
         $response = $app->run('PUT', 'methodnotallowed');
         $this->assertEquals(405, $response->status());
     }
+
+    public function testPathParamCaptureFirst()
+    {
+        $app = new Bullet\App();
+        $app->path('paramtest', function($request) use($app) {
+            // Digit
+            $app->param('ctype_digit', function($request, $id) use($app) {
+                return $id;
+            });
+            // Alphanumeric
+            $app->param('ctype_alnum', function($request, $slug) use($app) {
+                return $slug;
+            });
+        });
+
+        $response = $app->run('GET', 'paramtest/42');
+        $this->assertEquals(200, $response->status());
+        $this->assertEquals('42', $response->content());
+    }
+
+    public function testPathParamCaptureSecond()
+    {
+        $app = new Bullet\App();
+        $app->path('paramtest', function($request) use($app) {
+            // Digit
+            $app->param('ctype_digit', function($request, $id) use($app) {
+                return $id;
+            });
+            // All printable characters except space
+            $app->param('ctype_graph', function($request, $slug) use($app) {
+                return $slug;
+            });
+        });
+
+        $response = $app->run('GET', 'paramtest/my-blog-post-title');
+        $this->assertEquals(200, $response->status());
+        $this->assertEquals('my-blog-post-title', $response->content());
+    }
+
+    public function testPathParamCaptureWithMethodHandlers()
+    {
+        $app = new Bullet\App();
+        $app->path('paramtest', function($request) use($app) {
+            // Digit
+            $app->param('ctype_digit', function($request, $id) use($app) {
+                $app->get(function($request) use($id) {
+                    // View resource
+                    return 'view_' . $id;
+                });
+
+                $app->put(function($request) use($id) {
+                    // Update resource
+                    return 'update_' . $id;
+                });
+                return $id;
+            });
+            // All printable characters except space
+            $app->param('ctype_graph', function($request, $slug) use($app) {
+                return $slug;
+            });
+        });
+
+        $response = $app->run('PUT', 'paramtest/546');
+        $this->assertEquals(200, $response->status());
+        $this->assertEquals('update_546', $response->content());
+    }
 }

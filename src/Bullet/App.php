@@ -116,28 +116,13 @@ class App
             return $res;
         }
 
+        // Default response is boolean false (produces 404 Not Found)
+        $res = false;
+
         // Run 'path' callbacks
         if(isset($this->_callbacks['path'][$path])) {
             $cb = $this->_callbacks['path'][$path];
             $res = call_user_func($cb, $this->request());
-
-            // Run 'method' callbacks if the path is the full requested one
-            if($this->isRequestPath()) {
-                // If there are ANY method callbacks, use if matches method, return 405 if not
-                // If NO method callbacks are present, path return value will be used, or 404
-                if(count($this->_callbacks['method']) > 0) {
-                    if(isset($this->_callbacks['method'][$method])) {
-                        $cb = $this->_callbacks['method'][$method];
-                        $res = call_user_func($cb, $this->request());
-                    } else {
-                        $res = $this->response(null, 405);
-                    }
-                }
-            } else {
-                // Empty out collected method callbacks
-                $this->_callbacks['method'] = array();
-            }
-            return $res;
         }
 
         // Run 'param' callbacks
@@ -146,14 +131,29 @@ class App
             $cb = array_shift($this->_callbacks['param']);
             $param = call_user_func($filter, $path);
             if(false === $param) {
-                return $this->_runPath($method, $path);
+                $res = $this->_runPath($method, $path);
             }
-            $res = call_user_func($cb, $this->request(), $param);
-            return $res;
+            $res = call_user_func($cb, $this->request(), $path);
         }
 
-        // Return boolean false (404 - path not matched)
-        return false;
+        // Run 'method' callbacks if the path is the full requested one
+        if($this->isRequestPath()) {
+            // If there are ANY method callbacks, use if matches method, return 405 if not
+            // If NO method callbacks are present, path return value will be used, or 404
+            if(count($this->_callbacks['method']) > 0) {
+                if(isset($this->_callbacks['method'][$method])) {
+                    $cb = $this->_callbacks['method'][$method];
+                    $res = call_user_func($cb, $this->request());
+                } else {
+                    $res = $this->response(null, 405);
+                }
+            }
+        } else {
+            // Empty out collected method callbacks
+            $this->_callbacks['method'] = array();
+        }
+
+        return $res;
     }
 
     /**

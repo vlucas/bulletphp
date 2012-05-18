@@ -34,12 +34,18 @@ Rules
    callback is not present, a 405 "Method Not Allowed" response will be
    returned.
 
-Setup
+Installing with Composer
 -----
+Use the [basic usage guide](http://getcomposer.org/doc/01-basic-usage.md),
+or follow the steps below:
 
-Clone Bullet from git source
+Setup your `composer.json` file at the root of your project
 ```
-git clone git@github.com:vlucas/bullet.git
+{
+    "require": {
+        "vlucas/bullet": "*"
+    }
+}
 ```
 
 Install Composer
@@ -47,15 +53,14 @@ Install Composer
 curl -s http://getcomposer.org/installer | php
 ```
 
-Install Dependencies
+Install Dependencies (will download Bullet)
 ```
 php composer.phar install
 ```
 
-Write code for your app (use the minimal example below to get started)
+Create `index.php` (use the minimal example below to get started)
 ```
 <?php
-require __DIR__ . '/src/Bullet/App.php';
 require __DIR__ . '/vendor/autoload.php';
 
 // Your App
@@ -64,8 +69,20 @@ $app->path('/', function($request) {
     return "Hello World!";
 });
 
-// Run the app! (method, url)
-echo $app->run($_SERVER['HTTP_METHOD'], $_SERVER['REQUEST_URI']);
+// Run the app! (takes $method, $url or Bullet\Request object)
+echo $app->run(new Bullet\Request());
+```
+
+Use an `.htaccess` file for mod_rewrite (if you're using Apache)
+```
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+
+  # Reroute any incoming requestst that is not an existing directory or file
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteRule ^(.*)$ index.php?u=$1 [L,QSA]
+</IfModule>
 ```
 
 View it in your browser!
@@ -127,6 +144,52 @@ $app->path('blog', function($request) use($app) {
 echo $app->run("GET", "blog/posts");
 ```
 
+### Capturing Path Parameters
+
+Perhaps the most compelling use of URL routing is to capture path
+segments and use them as parameters to fetch items from a database, like
+`/posts/42` and `/posts/42/edit`. Bullet has a special `param` handler
+for this that takes two arguments: a `test` callback that validates the
+parameter type for use, and and a `Closure` callback. If the `test`
+callback returns boolean `false`, the closure is never executed, and the
+next path segment or param is tested. If it returns boolean `true`, the
+captured parameter is passed to the Closure as the second argument.
+
+Just like regular paths, HTTP method handlers can be nested inside param
+callbacks, as well as other paths, more parameters, etc.
+
+```
+$app = new Bullet\App();
+$app->path('posts', function($request) use($app) {
+    // Digit
+    $app->param('ctype_digit', function($request, $id) use($app) {
+        $app->get(function($request) use($id) {
+            // View resource
+            return 'view_' . $id;
+        });
+        $app->put(function($request) use($id) {
+            // Update resource
+            return 'update_' . $id;
+        });
+        $app->delete(function($request) use($id) {
+            // Delete resource
+            return 'delete_' . $id;
+        });
+    });
+    // All printable characters except space
+    $app->param('ctype_graph', function($request, $slug) use($app) {
+        return $slug; // 'my-post-title'
+    });
+});
+
+// Results of above code
+echo $app->run('GET',   '/posts/42'); // 'view_42'
+echo $app->run('PUT',   '/posts/42'); // 'update_42'
+echo $app->run('DELTE', '/posts/42'); // 'delete_42'
+
+echo $app->run('DELTE', '/posts/my-post-title'); // 'my-post-title'
+```
+
 Using Rackem
 ------------
 
@@ -142,8 +205,6 @@ middleware more easily.
 ```
 <?php
 use \Rackem\Rack;
-
-require __DIR__ . '/src/Bullet/App.php';
 require __DIR__ . '/vendor/autoload.php';
 
 // Your App
@@ -159,6 +220,12 @@ Rack::run($app);
 
 Credits
 -------
+
+Bullet - and specifically path-based callbacks that fully embrace HTTP
+and encourage a more resource-oriented design - is something I have been
+thinking about for a long time, and was finally moved to create it after
+seeing @joshbuddy give a presentation on [Renee](http://reneerb.com/) at
+Confoo 2012.
 
 Bullet optionally uses [Rackem](https://github.com/tamagokun/rackem)
 (PHP implementation of Ruby's Rack) to make using middleware a

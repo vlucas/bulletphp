@@ -316,7 +316,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
         $app = new Bullet\App();
         $app->path('paramtest', function($request) use($app) {
             // Digit
-            $app->param('ctype_digit', function($request, $id) use($app) {
+            $app->param('int', function($request, $id) use($app) {
                 $app->get(function($request) use($id) {
                     // View resource
                     return 'view_' . $id;
@@ -324,12 +324,13 @@ class AppTest extends \PHPUnit_Framework_TestCase
 
                 $app->put(function($request) use($id) {
                     // Update resource
+                    var_dump($id);
                     return 'update_' . $id;
                 });
                 return $id;
             });
             // All printable characters except space
-            $app->param('ctype_graph', function($request, $slug) use($app) {
+            $app->param('slug', function($request, $slug) use($app) {
                 return $slug;
             });
         });

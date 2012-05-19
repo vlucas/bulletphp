@@ -10,9 +10,31 @@ class App
     protected $_callbacks = array(
       'path' => array(),
       'param' => array(),
+      'param_type' => array(),
       'method' => array()
     );
 
+    public function __construct()
+    {
+        $this->registerParamType('int', function($value) {
+            return filter_var($value, FILTER_VALIDATE_INT);
+        });
+        $this->registerParamType('float', function($value) {
+            return filter_var($value, FILTER_VALIDATE_FLOAT);
+        });
+        // True = "1", "true", "on", "yes"
+        // False = "0", "false", "off", "no"
+        $this->registerParamType('boolean', function($value) {
+            $filtered = filter_var($value, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+            return (!empty($filtered) && $filtered !== null);
+        });
+        $this->registerParamType('slug', function($value) {
+            return (preg_match("/[a-zA-Z0-9-_]/", $value) > 0);
+        });
+        $this->registerParamType('email', function($value) {
+            return filter_var($value, FILTER_VALIDATE_EMAIL);
+        });
+    }
 
     public function path($path, \Closure $callback)
     {
@@ -24,6 +46,15 @@ class App
     public function param($param, \Closure $callback)
     {
         $this->_callbacks['param'][$param] = $this->_prepClosure($callback);
+        return $this;
+    }
+
+    public function registerParamType($type, $callback)
+    {
+        if(!is_callable($callback)) {
+            throw new \InvalidArgumentException("Second argument must be a valid callback. Given argument was not callable.");
+        }
+        $this->_callbacks['param_type'][$type] = $callback;
         return $this;
     }
 
@@ -128,10 +159,19 @@ class App
         // Run 'param' callbacks
         if(count($this->_callbacks['param']) > 0) {
             $filter = key($this->_callbacks['param']);
+            // Use matching registered filter type callback if given a non-callable string
+            if(is_string($filter) && !is_callable($filter) && isset($this->_callbacks['param_type'][$filter])) {
+                $filter = $this->_callbacks['param_type'][$filter];
+            }
             $cb = array_shift($this->_callbacks['param']);
             $param = call_user_func($filter, $path);
-            if(false === $param) {
+
+            // Skip to next callback in same path if boolean false returned
+            if($param === false) {
                 $res = $this->_runPath($method, $path);
+            } elseif(!is_bool($param)) {
+                // Pass callback test function return value if not boolean
+                $path = $param;
             }
             $res = call_user_func($cb, $this->request(), $path);
         }

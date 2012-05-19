@@ -158,22 +158,23 @@ class App
 
         // Run 'param' callbacks
         if(count($this->_callbacks['param']) > 0) {
-            $filter = key($this->_callbacks['param']);
-            // Use matching registered filter type callback if given a non-callable string
-            if(is_string($filter) && !is_callable($filter) && isset($this->_callbacks['param_type'][$filter])) {
-                $filter = $this->_callbacks['param_type'][$filter];
-            }
-            $cb = array_shift($this->_callbacks['param']);
-            $param = call_user_func($filter, $path);
+            foreach($this->_callbacks['param'] as $filter => $cb) {
+                // Use matching registered filter type callback if given a non-callable string
+                if(is_string($filter) && !is_callable($filter) && isset($this->_callbacks['param_type'][$filter])) {
+                    $filter = $this->_callbacks['param_type'][$filter];
+                }
+                $param = call_user_func($filter, $path);
 
-            // Skip to next callback in same path if boolean false returned
-            if($param === false) {
-                $res = $this->_runPath($method, $path);
-            } elseif(!is_bool($param)) {
-                // Pass callback test function return value if not boolean
-                $path = $param;
+                // Skip to next callback in same path if boolean false returned
+                if($param === false) {
+                    continue;
+                } elseif(!is_bool($param)) {
+                    // Pass callback test function return value if not boolean
+                    $path = $param;
+                }
+                $res = call_user_func($cb, $this->request(), $path);
+                break;
             }
-            $res = call_user_func($cb, $this->request(), $path);
         }
 
         // Run 'method' callbacks if the path is the full requested one

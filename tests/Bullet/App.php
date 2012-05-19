@@ -324,7 +324,6 @@ class AppTest extends \PHPUnit_Framework_TestCase
 
                 $app->put(function($request) use($id) {
                     // Update resource
-                    var_dump($id);
                     return 'update_' . $id;
                 });
                 return $id;

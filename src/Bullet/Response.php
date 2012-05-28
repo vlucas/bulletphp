@@ -94,7 +94,7 @@ class Response
     public function content($content = null)
     {
         if(null === $content) {
-            return (string) $this->_content;
+            return $this->_content;
         }
         $this->_content = $content;
     }

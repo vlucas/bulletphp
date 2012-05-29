@@ -11,7 +11,8 @@ class App
       'path' => array(),
       'param' => array(),
       'param_type' => array(),
-      'method' => array()
+      'method' => array(),
+      'custom' => array(),
     );
 
     public function __construct()
@@ -75,6 +76,7 @@ class App
      *
      * @param string|object $method HTTP request method string or \Bullet\Request object
      * @param string optional $uri URI/path to run
+     * @return \Bullet\Response
      */
     public function run($method, $uri = null)
     {
@@ -82,9 +84,11 @@ class App
 
         if($method instanceof \Bullet\Request) {
             $request = $method;
+            $this->_request = $request;
             $this->_requestMethod = strtoupper($request->method());
             $this->_requestPath = $request->url();
         } else {
+            $this->_request = new \Bullet\Request();
             $this->_requestMethod = strtoupper($method);
             $this->_requestPath = $uri;
         }
@@ -104,8 +108,13 @@ class App
 
         // Ensure response is always a Bullet\Response
         if($response === false) {
+            // Boolean false result generates a 404
             $response = $this->response(null, 404);
+        } elseif(is_int($response)) {
+            // Assume int response is desired HTTP status code
+            $response = $this->response(null, $response);
         } else {
+            // Convert response to Bullet\Response object if not one already
             if(!($response instanceof \Bullet\Response)) {
                 $response = $this->response($response);
             }
@@ -202,7 +211,7 @@ class App
      */
     public function request()
     {
-        return array();
+        return $this->_request;
     }
 
     /**
@@ -264,5 +273,59 @@ class App
     {
         $response = $this->run($env['REQUEST_METHOD'], $env['PATH_INFO']);
         return array($response->status(), $response->headers(), $response->content());
+    }
+
+    /**
+     * Print out an array or object contents in preformatted text
+     * Useful for debugging and quickly determining contents of variables
+     */
+    public function dump()
+    {
+        $objects = func_get_args();
+        $content = "\n<pre>\n";
+        foreach($objects as $object) {
+            $content .= print_r($object, true);
+        }
+        return $content . "\n</pre>\n";
+    }
+
+    /**
+     * Add a custom user method via closure or PHP callback
+     *
+     * @param string $method Method name to add
+     * @param callback $callback Callback or closure that will be executed when missing method call matching $method is made
+     * @throws BadMethodCallException
+     */
+    public function addMethod($method, $callback)
+    {
+        if(!is_callable($callback)) {
+            throw new \InvalidArgumentException("Second argument is expected to be a valid callback or closure.");	
+        }
+        $this->_callbacks['custom'][$method] = $callback;
+    }
+
+    /**
+     * Run user-added callback
+     *
+     * @param string $method Method name called
+     * @param array $args Array of arguments used in missing method call
+     * @throws BadMethodCallException
+     */
+    public function __call($method, $args)
+    {
+        if(isset($this->_callbacks['custom'][$method]) && is_callable($this->_callbacks['custom'][$method])) {
+            $callback = $this->_callbacks['custom'][$method];
+            return call_user_func_array($callback, $args);
+        } else {
+            throw new \BadMethodCallException("Method '" . __CLASS__ . "::" . $method . "' not found");	
+        }
+    }
+
+    /**
+     * Prevent PHP from trying to serialize cached object instances on Kernel
+     */
+    public function __sleep()
+    {
+        return array();
     }
 }

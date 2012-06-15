@@ -43,7 +43,7 @@ Setup your `composer.json` file at the root of your project
 ```
 {
     "require": {
-        "vlucas/bullet": "*"
+        "vlucas/bulletphp": "*"
     }
 }
 ```

@@ -325,7 +325,19 @@ class Template extends Response
             // Just get raw file contents
             $templateContent = file_get_contents($vfile);
         }
+        $templateContent = trim($templateContent);
 
-        return trim($templateContent);
+        // Wrap template content in layout
+        if($this->layout()) {
+            $layout = new static($this->layout());
+            // Set layout path if specified
+            if(isset(self::$_config['path_layouts'])) {
+                $layout->path(self::$_config['path_layouts']);
+            }
+            $layout->set('yield', $templateContent);
+            $templateContent = $layout->content($parsePHP);
+        }
+
+        return $templateContent;
     }
 }

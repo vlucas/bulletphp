@@ -1,6 +1,6 @@
 <?php
 namespace Bullet\View;
-use Bullet\Path;
+use Bullet\Response;
 
 /**
  * View template class that will display and handle view templates
@@ -9,8 +9,15 @@ use Bullet\Path;
  * @author Vance Lucas <vance@vancelucas.com>
  * @license http://www.opensource.org/licenses/bsd-license.php
  */
-class Template extends Path\Response
+class Template extends Response
 {
+    // Static config setup for usage
+    protected static $_config = array(
+        'default_format' => 'html',
+        'default_extension' => 'php',
+        'path' => null
+    );
+
     // Template specific stuff
     protected $_file;
     protected $_fileFormat;
@@ -18,10 +25,6 @@ class Template extends Path\Response
     protected $_path;
     protected $_layout;
     protected $_exists;
-
-    // Extension type
-    protected $_default_format = 'html';
-    protected $_default_extenstion = 'php';
 
     // Content blocks
     protected static $_blocks = array();
@@ -39,6 +42,21 @@ class Template extends Path\Response
         $this->path($path);
 
         $this->init();
+    }
+
+
+    /**
+     * Config setup for main templates directory, etc.
+     */
+    public static function config($cfg = null)
+    {
+        // Getter
+        if(null === $cfg) {
+            return self::$_config;
+        }
+
+        // Setter
+        self::$_config = array_merge(self::$_config, $cfg);
     }
 
 
@@ -68,7 +86,7 @@ class Template extends Path\Response
      * @param string $name Name of the block
      * @return Bullet\View\Template\Block
      */
-    public function block($name, $closure = null)
+    public function block($name, \Closure $closure = null)
     {
         if(!isset(self::$_blocks[$name])) {
             self::$_blocks[$name] = new Template\Block($name, $closure);
@@ -154,7 +172,7 @@ class Template extends Path\Response
     public function path($path = null)
     {
         if(null === $path) {
-            return $this->_path;
+            return ($this->_path) ? $this->_path : self::$_config['path'];
         } else {
             $this->_path = $path;
             $this->_exists = false;
@@ -174,7 +192,7 @@ class Template extends Path\Response
             return $this->_file;
         } else {
             $this->_file = $view;
-            $this->_fileFormat = ($format) ? $format : $this->_default_extenstion;
+            $this->_fileFormat = ($format) ? $format : self::$_config['default_format'];
             $this->_exists = false;
             return $this; // Fluent interface
         }
@@ -187,12 +205,12 @@ class Template extends Path\Response
      * @param OPTIONAL $template string (Name of the template to return full file format)
      * @return string
      */
-    public function filePath($template = null)
+    public function fileName($template = null)
     {
         if(null === $template) {
             $template = $this->file();
         }
-        return $template . '.' . $this->format() . '.' . $this->_default_extenstion;
+        return $template . '.' . $this->format() . '.' . self::$_config['default_extension'];
     }
 
 
@@ -255,7 +273,7 @@ class Template extends Path\Response
         }
 
         $vpath    = $this->path();
-        $template = $this->filePath();
+        $template = $this->fileName();
         $vfile    = $vpath . $template;
 
         // Ensure path has been set
@@ -288,24 +306,26 @@ class Template extends Path\Response
     {
         $this->exists(true);
 
-        $vfile = $this->path() . $this->filePath();
+        $vfile = $this->path() . $this->fileName();
 
         // Include() and parse PHP code
         if($parsePHP) {
             ob_start();
-            // Extract set variables into local template scope
-            extract($this->vars());
 
-            // Localize object instance for easier use in closures 
-            $view = &$this;
-
-            include($vfile);
-            $templateContent = ob_get_clean();
+            // Use closure to get isolated scope
+            $view = $this;
+            $vars = $this->vars();
+            $render = function($templateFile) use($view, $vars) {
+                extract($vars);
+                require $templateFile;
+                return ob_get_clean();
+            };
+            $templateContent = $render($vfile);
         } else {
             // Just get raw file contents
             $templateContent = file_get_contents($vfile);
         }
 
-        return $templateContent;
+        return trim($templateContent);
     }
 }

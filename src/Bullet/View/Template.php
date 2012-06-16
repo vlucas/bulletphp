@@ -15,7 +15,9 @@ class Template extends Response
     protected static $_config = array(
         'default_format' => 'html',
         'default_extension' => 'php',
-        'path' => null
+        'path' => null,
+        'path_layouts' => null,
+        'auto_layout' => false // Automatically wraps specified layout
     );
 
     // Template specific stuff
@@ -24,6 +26,7 @@ class Template extends Response
     protected $_vars = array();
     protected $_path;
     protected $_layout;
+    protected static $_layoutRendered = false;
     protected $_exists;
 
     // Content blocks
@@ -40,6 +43,11 @@ class Template extends Response
     {
         $this->file($file, $format);
         $this->path($path);
+
+        // Auto layout
+        if(self::$_config['auto_layout']) {
+            $this->layout(self::$_config['auto_layout']);
+        }
 
         $this->init();
     }
@@ -329,7 +337,12 @@ class Template extends Response
 
         // Wrap template content in layout
         if($this->layout()) {
+            // Ensure layout doesn't get rendered recursively
+            self::$_config['auto_layout'] = false;
+
+            // New template for layout
             $layout = new static($this->layout());
+
             // Set layout path if specified
             if(isset(self::$_config['path_layouts'])) {
                 $layout->path(self::$_config['path_layouts']);

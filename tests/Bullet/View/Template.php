@@ -74,6 +74,16 @@ class ViewTemplateTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals('<div><p>Test</p></div>', $tpl->content());
     }
 
+    public function testTemplateLayoutAutoWrappingConfig()
+    {
+        Template::config(array(
+          'path_layouts' => $this->templateDir . 'layouts/',
+          'auto_layout' => 'div'
+        ));
+        $tpl = new Template('test');
+        $this->assertEquals('<div><p>Test</p></div>', $tpl->content());
+    }
+
     public function testTemplateLayoutWrappingWithoutParsingPHP()
     {
         Template::config(array('path_layouts' => $this->templateDir . 'layouts/'));

@@ -393,9 +393,6 @@ class AppTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals('cli:/blog/42/edit', $response->content());
     }
 
-    /**
-     * @expectException Exception
-     */
     public function testExceptionsAreCaughtWhenCustomHandlerIsRegistered()
     {
         $app = new Bullet\App();
@@ -412,5 +409,20 @@ class AppTest extends \PHPUnit_Framework_TestCase
         $response = $app->run('GET', 'test');
         $this->assertEquals(500, $response->status());
         $this->assertEquals('yep', $response->content());
+    }
+
+    public function testExceptionHandlerAllowsStatusOtherThan500()
+    {
+        $app = new Bullet\App();
+        $app->exceptionHandler(function($e) use($app) {
+            return $app->response('Bad Request custom exception handler', 400);
+        });
+        $app->path('test', function($request) use($app) {
+            throw new \Exception("This is a specific error message here!");
+        });
+
+        $response = $app->run('POST', 'test');
+        $this->assertEquals(400, $response->status());
+        $this->assertEquals('Bad Request custom exception handler', $response->content());
     }
 }

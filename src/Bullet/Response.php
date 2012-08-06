@@ -25,8 +25,15 @@ class Response
      */
     public function __construct($content = null, $status = 200)
     {
-        $this->_content = $content;
-        $this->_status = $status;
+        // Allow composition of response objects
+        $class = __CLASS__;
+        if($content instanceof $class) {
+            $this->_content = $content->content();
+            $this->_status = $content->status();
+        } else {
+            $this->_content = $content;
+            $this->_status = $status;
+        }
         $this->_protocol = isset($_SERVER['SERVER_PROTOCOL']) ? $_SERVER['SERVER_PROTOCOL'] : 'http';
     }
 

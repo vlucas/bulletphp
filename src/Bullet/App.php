@@ -12,7 +12,8 @@ class App
       'param' => array(),
       'param_type' => array(),
       'method' => array(),
-      'custom' => array(),
+      'exception' => array(),
+      'custom' => array()
     );
 
     public function __construct()
@@ -102,8 +103,11 @@ class App
             $this->_currentPath = implode('/', array_slice($paths, 0, $pos+1));
 
             // Run and get result
-            $res = $this->_runPath($this->_requestMethod, $path);
-            $response = $res;
+            try {
+                $response = $this->_runPath($this->_requestMethod, $path);
+            } catch(\Exception $e) {
+                $response = $this->response($this->handleException($e), 500);
+            }
         }
 
         // Ensure response is always a Bullet\Response
@@ -267,6 +271,65 @@ class App
     }
 
     /**
+     * Build URL path for
+     */
+    public function url($path = null)
+    {
+        $request = $this->request();
+
+        // Subdirectory, if any
+        $subdir = trim(mb_substr($request->uri(), 0, mb_strrpos($request->uri(), $request->url())), '/');
+
+        // Assemble full url
+        $url = $request->scheme() . '://' . $request->host() . '/' . $subdir;
+
+        // Allow for './' current path shortcut (append given path to current one)
+        if(strpos($path, './') === 0) {
+            $path = substr($path, 2);
+            $path = $this->currentPath() . '/' . trim($path, '/');
+        }
+
+        if($path === null) {
+            $path = $this->currentPath();
+        }
+
+        // url + path
+        $url = rtrim($url, '/') . '/' . ltrim($path, '/');
+
+        return $url;
+    }
+
+    /**
+     * Add a custom exception handler to handle any exceptions and return an HTTP response
+     *
+     * @param callback $callback Callback or closure that will be executed when missing method call matching $method is made
+     * @throws InvalidArgumentException
+     */
+    public function exceptionHandler($callback)
+    {
+        if(!is_callable($callback)) {
+            throw new \InvalidArgumentException("First argument is expected to be a valid callback or closure. Got: " . gettype($callback));	
+        }
+        $this->_callbacks['exception'][] = $callback;
+    }
+
+    /**
+     * Handle exception using exception handling callbacks, if any
+     */
+    public function handleException(\Exception $e)
+    {
+        foreach($this->_callbacks['exception'] as $handler) {
+            $res = call_user_func($handler, $e);
+            if($res !== null) {
+                return $res;
+            }
+        }
+
+        // Re-throw exception if there are no registered exception handlers
+        throw $e;
+    }
+
+    /**
      * Implementing for Rackem\Rack (PHP implementation of Rack)
      */
     public function call($env)
@@ -294,12 +357,15 @@ class App
      *
      * @param string $method Method name to add
      * @param callback $callback Callback or closure that will be executed when missing method call matching $method is made
-     * @throws BadMethodCallException
+     * @throws InvalidArgumentException
      */
     public function addMethod($method, $callback)
     {
         if(!is_callable($callback)) {
             throw new \InvalidArgumentException("Second argument is expected to be a valid callback or closure.");	
+        }
+        if(method_exists($this, $method)) {
+            throw new \InvalidArgumentException("Method '" . $method . "' already exists on " . __CLASS__);	
         }
         $this->_callbacks['custom'][$method] = $callback;
     }

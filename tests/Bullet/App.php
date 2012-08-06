@@ -338,4 +338,79 @@ class AppTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals(200, $response->status());
         $this->assertEquals('update_546', $response->content());
     }
+
+    public function testUrlHelperReturnsCurrentPathWhenCalledWithNoArguments()
+    {
+        $app = new Bullet\App();
+        $app->path('test', function($request) use($app) {
+            $collect[] = 'test';
+            $app->path('foo', function() use($app) {
+                return $app->url();
+            });
+            $app->path('foo2', function() {
+                $collect[] = 'foo2';
+            });
+        });
+
+        $response = $app->run('GET', '/test/foo/');
+        $this->assertEquals(200, $response->status());
+        $this->assertEquals('cli:/test/foo', $response->content());
+    }
+
+    public function testUrlHelperReturnsRelativePath()
+    {
+        $app = new Bullet\App();
+        $app->path('test', function($request) use($app) {
+            $collect[] = 'test';
+            $app->path('foo', function() use($app) {
+                return $app->url('./blogs', array('full' => false));
+            });
+            $app->path('foo2', function() {
+                $collect[] = 'foo2';
+            });
+        });
+
+        $response = $app->run('GET', '/test/foo/');
+        $this->assertEquals(200, $response->status());
+        $this->assertEquals('cli:/test/foo/blogs', $response->content());
+    }
+
+    public function testUrlHelperReturnsGivenPath()
+    {
+        $app = new Bullet\App();
+        $app->path('test', function($request) use($app) {
+            $collect[] = 'test';
+            $app->path('foo', function() use($app) {
+                return $app->url('blog/42/edit');
+            });
+            $app->path('foo2', function() {
+                $collect[] = 'foo2';
+            });
+        });
+
+        $response = $app->run('GET', '/test/foo/');
+        $this->assertEquals(200, $response->status());
+        $this->assertEquals('cli:/blog/42/edit', $response->content());
+    }
+
+    /**
+     * @expectException Exception
+     */
+    public function testExceptionsAreCaughtWhenCustomHandlerIsRegistered()
+    {
+        $app = new Bullet\App();
+        $app->exceptionHandler(function($e) {
+            if($e instanceof \Exception) {
+                return "yep";
+            }
+            return "nope";
+        });
+        $app->path('test', function($request) use($app) {
+            throw new \Exception("This is a specific error message here!");
+        });
+
+        $response = $app->run('GET', 'test');
+        $this->assertEquals(500, $response->status());
+        $this->assertEquals('yep', $response->content());
+    }
 }

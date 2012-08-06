@@ -11,8 +11,8 @@
          bootstrap="./tests/bootstrap.php"
 >
   <testsuites>
-    <testsuite name="Bullet Tests">
-      <directory>./tests/</directory>
+    <testsuite name="Bullet Test Suite">
+      <directory suffix=".php">./tests/Bullet</directory>
     </testsuite>
   </testsuites>
 </phpunit>

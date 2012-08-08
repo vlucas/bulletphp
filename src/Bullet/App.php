@@ -12,6 +12,7 @@ class App extends \Pimple
       'param' => array(),
       'param_type' => array(),
       'method' => array(),
+      'format' => array(),
       'exception' => array(),
       'custom' => array()
     );
@@ -108,8 +109,10 @@ class App extends \Pimple
         }
 
         // Detect extension and assign it as the requested format (default is 'html')
-        if(strpos($this->_requestPath, '.') !== false) {
-            $this->_request->format(end(explode('.', $this->_requestPath)));
+        $dotPos = strpos($this->_requestPath, '.');
+        if($dotPos !== false) {
+            $ext = substr($this->_requestPath, $dotPos+1);
+            $this->_request->format($ext);
             // Remove extension from path for path execution
             $this->_requestPath = substr($this->_requestPath, 0, -(strlen($this->_request->format())+1));
         }

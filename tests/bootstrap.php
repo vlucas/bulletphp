@@ -1,9 +1,10 @@
 <?php
+error_reporting(-1);
+
 /**
  * Path trickery ensures test suite will always run, standalone or within
  * another composer package. Designed to find composer autoloader and require
  */
-
 $vendorPos = strpos(__DIR__, 'vendor/vlucas/bulletphp');
 if($vendorPos !== false) {
   // Package has been cloned within another composer package, resolve path to autoloader

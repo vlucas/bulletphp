@@ -1,7 +1,7 @@
 <?php
 namespace Bullet;
 
-class App
+class App extends \Pimple
 {
     protected $_paths = array();
     protected $_requestMethod;

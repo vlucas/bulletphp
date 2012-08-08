@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset='utf-8'>
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <link href='https://fonts.googleapis.com/css?family=Chivo:900' rel='stylesheet' type='text/css'>
+    <link rel="stylesheet" type="text/css" href="stylesheets/stylesheet.css" media="screen" />
+    <link rel="stylesheet" type="text/css" href="stylesheets/pygment_trac.css" media="screen" />
+    <link rel="stylesheet" type="text/css" href="stylesheets/print.css" media="print" />
+    <!--[if lt IE 9]>
+    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <title>Bulletphp by vlucas</title>
+  </head>
+
+  <body>
+    <div id="container">
+      <div class="inner">
+
+        <header>
+          <h1>Bulletphp</h1>
+          <h2>A resource-oriented micro PHP framework</h2>
+        </header>
+
+        <section id="downloads" class="clearfix">
+          <a href="https://github.com/vlucas/bulletphp/zipball/master" id="download-zip" class="button"><span>Download .zip</span></a>
+          <a href="https://github.com/vlucas/bulletphp/tarball/master" id="download-tar-gz" class="button"><span>Download .tar.gz</span></a>
+          <a href="https://github.com/vlucas/bulletphp" id="view-on-github" class="button"><span>View on GitHub</span></a>
+        </section>
+
+        <hr>
+
+        <section id="main_content">
+          <h1>Bullet</h1>
+
+<p>Bullet is an experimental resource-oriented micro PHP framework. Bullet
+takes a unique approach by parsing each path part independently and one
+at a time via callbacks. The path part callbacks are nested to produce
+different responses and to follow and execute deeper paths.</p>
+
+<h2>Requirements</h2>
+
+<ul>
+<li>PHP 5.3+ (heavy use of closures)</li>
+<li>
+<a href="http://getcomposer.org">Composer</a> for all package management and
+autoloading (may require command-line access)</li>
+</ul><h2>Rules </h2>
+
+<ul>
+<li>Apps are built around HTTP URIs and defined paths, not forced MVC
+(but MVC-style separation of concerns is still highly recommenended and
+encouraged)</li>
+<li>Bullet handles <strong>one segment of the path at a time</strong>, and executes the
+callback for that path segment before proceesing to the next segment 
+(path callbacks are executed from left to right, until the entire path
+is consumed).</li>
+<li>If the entire path cannot be consumed, a 404 error will be returned
+(note that some callbacks may have been executed before Bullet can
+know this due to the nature of callbacks and closures). Example: path
+<code>/events/45/edit</code> may return a 404 because there is no <code>edit</code> path
+callback, but paths <code>events</code> and <code>45</code> would have already been executed
+before Bullet can know to return a 404. This is why all your primary
+logic should be contained in <code>get</code>, <code>post</code>, or other method callbacks
+or in the model layer (and not in the bare <code>path</code> handlers).</li>
+<li>If the path can be fully consumed, and HTTP method handlers are present
+in the path but none are matched, a 405 "Method Not Allowed" response
+will be returned.</li>
+<li>If the path can be fully consumed, and format handlers are present in
+the path but none are matched, a 406 "Not Acceptable" response will
+be returned.</li>
+</ul><h2>Installing with Composer</h2>
+
+<p>Use the <a href="http://getcomposer.org/doc/01-basic-usage.md">basic usage guide</a>,
+or follow the steps below:</p>
+
+<p>Setup your <code>composer.json</code> file at the root of your project</p>
+
+<pre><code>{
+    "require": {
+        "vlucas/bulletphp": "*"
+    }
+}
+</code></pre>
+
+<p>Install Composer</p>
+
+<pre><code>curl -s http://getcomposer.org/installer | php
+</code></pre>
+
+<p>Install Dependencies (will download Bullet)</p>
+
+<pre><code>php composer.phar install
+</code></pre>
+
+<p>Create <code>index.php</code> (use the minimal example below to get started)</p>
+
+<pre><code>&lt;?php
+require __DIR__ . '/vendor/autoload.php';
+
+// Your App
+$app = new Bullet\App();
+$app-&gt;path('/', function($request) {
+    return "Hello World!";
+});
+
+// Run the app! (takes $method, $url or Bullet\Request object)
+echo $app-&gt;run(new Bullet\Request());
+</code></pre>
+
+<p>Use an <code>.htaccess</code> file for mod_rewrite (if you're using Apache)</p>
+
+<pre><code>&lt;IfModule mod_rewrite.c&gt;
+  RewriteEngine On
+
+  # Reroute any incoming requestst that is not an existing directory or file
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteRule ^(.*)$ index.php?u=$1 [L,QSA]
+&lt;/IfModule&gt;
+</code></pre>
+
+<p>View it in your browser!</p>
+
+<h2>Syntax</h2>
+
+<p>Bullet is not your typical PHP micro framework. Instead of defining a full
+path pattern or a typical URL route with a callback and parameters mapped
+to a REST method (GET, POST, etc.), Bullet parses only ONE URL segement
+at a time, and only has two methods for working with paths: <code>path</code> and
+<code>param</code>. As you may have guessed, <code>path</code> is for static path names like
+"blog" or "events" that won't change, and <code>param</code> is for variable path
+segments that need to be captured and used, like "42" or "my-post-title".
+You can then respond to paths using nested HTTP method callbacks that
+contain all the logic for the action you want to perform.</p>
+
+<p>This type of unique callback nesting eliminates repetitive code for
+loading records, checking authentication, and performing other setup
+work found in typical MVC frameworks or other microframeworks where each
+callback or action is in a separate scope or controller method.</p>
+
+<pre><code>$app = new Bullet\App(array(
+    'template.cfg' =&gt; array('path' =&gt; __DIR__ . '/templates')
+));
+
+// 'blog' subdirectory
+$app-&gt;path('blog', function($request) use($app) {
+
+    $blog = somehowGetBlogMapper(); // Your ORM or other methods here
+
+    // 'posts' subdirectory in 'blog' ('blog/posts')
+    $app-&gt;path('posts', function() use($app, $blog) {
+
+        // Load posts once for handling by GET/POST/DELETE below
+        $posts = $blog-&gt;allPosts(); // Your ORM or other methods here
+
+        // Handle GET on this path
+        $app-&gt;get(function() use($posts) {
+            // Display all $posts
+            return $app-&gt;template('posts/index', compact('posts'));
+        });
+
+        // Handle POST on this path
+        $app-&gt;post(function() use($posts) {
+            // Create new post
+            $post = new Post($request-&gt;post());
+            $mapper-&gt;save($post);
+            return $this-&gt;response($post-&gt;toJSON(), 201);
+        });
+
+        // Handle DELETE on this path
+        $app-&gt;delete(function() use($posts) {
+            // Delete entire posts collection
+            $posts-&gt;deleteAll();
+            return 200;
+        });
+
+    });
+});
+
+// Run the app and echo the response
+echo $app-&gt;run("GET", "blog/posts");
+</code></pre>
+
+<h3>Capturing Path Parameters</h3>
+
+<p>Perhaps the most compelling use of URL routing is to capture path
+segments and use them as parameters to fetch items from a database, like
+<code>/posts/42</code> and <code>/posts/42/edit</code>. Bullet has a special <code>param</code> handler
+for this that takes two arguments: a <code>test</code> callback that validates the
+parameter type for use, and and a <code>Closure</code> callback. If the <code>test</code>
+callback returns boolean <code>false</code>, the closure is never executed, and the
+next path segment or param is tested. If it returns boolean <code>true</code>, the
+captured parameter is passed to the Closure as the second argument.</p>
+
+<p>Just like regular paths, HTTP method handlers can be nested inside param
+callbacks, as well as other paths, more parameters, etc.</p>
+
+<pre><code>$app = new Bullet\App(array(
+    'template.cfg' =&gt; array('path' =&gt; __DIR__ . '/templates')
+));
+$app-&gt;path('posts', function($request) use($app) {
+    // Integer path segment, like 'posts/42'
+    $app-&gt;param('int', function($request, $id) use($app) {
+        $app-&gt;get(function($request) use($id) {
+            // View post
+            return 'view_' . $id;
+        });
+        $app-&gt;put(function($request) use($id) {
+            // Update resource
+            $post-&gt;data($request-&gt;post());
+            $post-&gt;save();
+            return 'update_' . $id;
+        });
+        $app-&gt;delete(function($request) use($id) {
+            // Delete resource
+            $post-&gt;delete();
+            return 'delete_' . $id;
+        });
+    });
+    // All printable characters except space
+    $app-&gt;param('ctype_graph', function($request, $slug) use($app) {
+        return $slug; // 'my-post-title'
+    });
+});
+
+// Results of above code
+echo $app-&gt;run('GET',   '/posts/42'); // 'view_42'
+echo $app-&gt;run('PUT',   '/posts/42'); // 'update_42'
+echo $app-&gt;run('DELTE', '/posts/42'); // 'delete_42'
+
+echo $app-&gt;run('DELTE', '/posts/my-post-title'); // 'my-post-title'
+</code></pre>
+
+<h2>Returning JSON (Useful for PHP JSON APIs)</h2>
+
+<p>Bullet has built-in support for returning JSON responses. If you return
+an array from a route handler (callback), Bullet will assume the
+response is JSON and automatically <code>json_encode</code> the array and return the
+HTTP response with the appropriate <code>Content-Type: application/json</code> header.</p>
+
+<pre><code>$app-&gt;path('/', function($request) use($app) {
+  $app-&gt;get(function($request) use($app) {
+    // Links to available resources for the API
+    return array(
+      '_links' =&gt; array(
+        'restaurants' =&gt; array(
+          'title' =&gt; 'Restaurants',
+          'href' =&gt; $app-&gt;url('restaurants')
+        ),
+        'events' =&gt; array(
+          'title' =&gt; 'Events',
+          'href' =&gt; $app-&gt;url('events')
+        )
+      )
+    );
+  });
+});
+</code></pre>
+
+<h3>HTTP Response Bullet Sends:</h3>
+
+<pre><code>Content-Type:application/json; charset=UTF-8
+
+{"_links":{"restaurants":{"title":"Restaurants","href":"http:\/\/yourdomain.local\/restaurants"},"events":{"title":"Events","href":"http:\/\/yourdomain.local\/events"}}}
+</code></pre>
+
+<h2>Bullet Response Types</h2>
+
+<p>There are many possible values you can return from a route handler in
+Bullet to produce a valid HTTP response. Most types can be either
+returned directly, or wrapped in the <code>$app-&gt;response()</code> helper for
+additional customization.</p>
+
+<h3>Strings</h3>
+
+<pre><code>$app = new Bullet\App();
+$app-&gt;path('/', function($request) use($app) {
+    return "Hello World";
+});
+$app-&gt;path('/', function($request) use($app) {
+    return $app-&gt;response("Hello Error!", 500);
+});
+</code></pre>
+
+<p>Strings result in a 200 OK response with a body containing the returned
+string. If you want to return a quick string response with a different
+HTTP status code, use the <code>$app-&gt;response()</code> helper.</p>
+
+<h3>Booleans</h3>
+
+<pre><code>$app = new Bullet\App();
+$app-&gt;path('/', function($request) use($app) {
+    return true;
+});
+$app-&gt;path('notfound', function($request) use($app) {
+    return false;
+});
+</code></pre>
+
+<p>Boolean <code>false</code> results in a 404 "Not Found" HTTP response, and boolean
+<code>true</code> results in a 200 "OK" HTTP response.</p>
+
+<h3>Integers</h3>
+
+<pre><code>$app = new Bullet\App();
+$app-&gt;path('teapot', function($request) use($app) {
+    return 418;
+});
+</code></pre>
+
+<p>Integers are mapped to their corresponding HTTP status code. In this
+example, a 418 "I'm a Teapot" HTTP response would be sent.</p>
+
+<h3>Arrays</h3>
+
+<pre><code>$app = new Bullet\App();
+$app-&gt;path('foo', function($request) use($app) {
+    return array('foo' =&gt; 'bar');
+});
+$app-&gt;path('bar', function($request) use($app) {
+    return $app-&gt;response(array('bar' =&gt; 'baz'), 201);
+});
+</code></pre>
+
+<p>Arrays are automatically passed through <code>json_encode</code> and the appropriate
+<code>Content-Type: application/json</code> HTTP response header is sent.</p>
+
+<h3>Templates</h3>
+
+<pre><code>// Configure template path with constructor
+$app = new Bullet\App(array(
+    'template.cfg' =&gt; array('path' =&gt; __DIR__ . '/templates')
+));
+
+// Routes
+$app-&gt;path('foo', function($request) use($app) {
+    return $app-&gt;template('foo');
+});
+$app-&gt;path('bar', function($request) use($app) {
+    return $app-&gt;template('bar', array('bar' =&gt; 'baz'), 201);
+});
+</code></pre>
+
+<p>The <code>$app-&gt;template()</code> helper returns an instance of
+<code>Bullet\View\Template</code> that is lazy-rendered on <code>__toString</code> when the
+HTTP response is sent. The first argument is a template name, and the
+second (optional) argument is an array of parameters to pass to the
+template for use.</p>
+
+<h2>Nested Requests (HMVC style code re-use)</h2>
+
+<p>Since you explicitly <code>return</code> values from Bullet routes instead of
+sending output directly, nested/sub requests are straightforward and easy.
+All route handlers will return <code>Bullet\Response</code> instances (even if they
+return a raw string or other data type, they are wrapped in a response
+object by the <code>run</code> method), and they can be composed to form a single
+HTTP response.</p>
+
+<pre><code>$app = new Bullet\App();
+$app-&gt;path('foo', function($request) use($app) {
+    return "foo";
+});
+$app-&gt;path('bar', function($request) use($app) {
+    $foo = $app-&gt;run('GET', 'foo'); // $foo is now a `Bullet\Response` instance
+    return $foo-&gt;content() . "bar";
+});
+echo $app-&gt;run('GET', 'bar'); // echos 'foobar' with a 200 OK status
+</code></pre>
+
+<h2>Running Tests</h2>
+
+<p>To run the Bullet test suite, simply run <code>phpunit</code> in the root of the
+directory where the bullet files are in. Please make sure to add tests
+and run the test suite before submitting pull requests for any contributions.</p>
+
+<h2>Credits</h2>
+
+<p>Bullet - and specifically path-based callbacks that fully embrace HTTP
+and encourage a more resource-oriented design - is something I have been
+thinking about for a long time, and was finally moved to create it after
+seeing <a href="https://github.com/joshbuddy">@joshbuddy</a> give a presentation on <a href="http://reneerb.com/">Renee</a>
+(Ruby) at <a href="http://confoo.ca">Confoo</a> 2012 in Montréal.</p>
+        </section>
+
+        <footer>
+          Bulletphp is maintained by <a href="https://github.com/vlucas">vlucas</a><br>
+          This page was generated by <a href="http://pages.github.com">GitHub Pages</a>. Tactile theme by <a href="http://twitter.com/jasonlong">Jason Long</a>.
+        </footer>
+
+                  <script type="text/javascript">
+            var gaJsHost = (("https:" == document.location.protocol) ? "https://ssl." : "http://www.");
+            document.write(unescape("%3Cscript src='" + gaJsHost + "google-analytics.com/ga.js' type='text/javascript'%3E%3C/script%3E"));
+          </script>
+          <script type="text/javascript">
+            try {
+              var pageTracker = _gat._getTracker("UA-359731-31");
+            pageTracker._trackPageview();
+            } catch(err) {}
+          </script>
+
+      </div>
+    </div>
+  </body>
+</html>

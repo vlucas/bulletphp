@@ -132,6 +132,12 @@ class App extends \Pimple
             }
         }
 
+        // JSON headers and response if content is an array
+        if(is_array($response->content())) {
+          $response->header('Content-Type', 'application/json');
+          $response->content(json_encode($response->content()));
+        }
+
         return $response;
     }
 

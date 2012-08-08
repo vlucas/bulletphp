@@ -190,12 +190,47 @@ echo $app->run('DELTE', '/posts/42'); // 'delete_42'
 echo $app->run('DELTE', '/posts/my-post-title'); // 'my-post-title'
 ```
 
+Returning JSON (Useful for PHP JSON APIs)
+-----------------------------------------
+
+Bullet has built-in support for returning JSON responses. If you return
+an array from a route handler (callback), Bullet will assume the
+response is JSON and automatically `json_encode` the array and return the
+HTTP response with the appropriate `Content-Type: application/json` header.
+
+```
+$app->path('/', function($request) use($app) {
+  $app->get(function($request) use($app) {
+    // Links to available resources for the API
+    return array(
+      '_links' => array(
+        'restaurants' => array(
+          'title' => 'Restaurants',
+          'href' => $app->url('restaurants')
+        ),
+        'events' => array(
+          'title' => 'Events',
+          'href' => $app->url('events')
+        )
+      )
+    );
+  });
+});
+```
+
+### HTTP Response Bullet Sends:
+```
+Content-Type:application/json; charset=UTF-8
+
+{"_links":{"restaurants":{"title":"Restaurants","href":"http:\/\/yourdomain.local\/restaurants"},"events":{"title":"Events","href":"http:\/\/yourdomain.local\/events"}}}
+```
+
 Running Tests
 -------------
 
 To run the Bullet test suite, simply run `phpunit` in the root of the
-directory where the bullet files are in. Please make sure to run the
-test suite before submitting and pull requests for any contributions.
+directory where the bullet files are in. Please make sure to add tests
+and run the test suite before submitting pull requests for any contributions.
 
 Credits
 -------
@@ -203,6 +238,6 @@ Credits
 Bullet - and specifically path-based callbacks that fully embrace HTTP
 and encourage a more resource-oriented design - is something I have been
 thinking about for a long time, and was finally moved to create it after
-seeing @joshbuddy give a presentation on [Renee](http://reneerb.com/) at
-Confoo 2012.
+seeing [@joshbuddy](https://github.com/joshbuddy) give a presentation on [Renee](http://reneerb.com/)
+(Ruby) at [Confoo](http://confoo.ca) 2012 in Montréal.
 

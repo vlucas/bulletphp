@@ -16,7 +16,12 @@ class App extends \Pimple
       'custom' => array()
     );
 
-    public function __construct()
+    /**
+     * New App instance
+     *
+     * @param array $values Array of config settings and objects to pass into Pimple container
+     */
+    public function __construct(array $values = array())
     {
         $this->registerParamType('int', function($value) {
             return filter_var($value, FILTER_VALIDATE_INT);
@@ -36,6 +41,9 @@ class App extends \Pimple
         $this->registerParamType('email', function($value) {
             return filter_var($value, FILTER_VALIDATE_EMAIL);
         });
+
+        // Pimple constructor
+        parent::__construct($values);
     }
 
     public function path($path, \Closure $callback)

@@ -1,11 +1,13 @@
 <?php
+namespace Bullet\Tests\View;
+use Bullet;
 use Bullet\View\Template;
 
-class ViewTemplateTest extends \PHPUnit_Framework_TestCase
+class TemplateTest extends \PHPUnit_Framework_TestCase
 {
     public function setUp()
     {
-        $this->templateDir = dirname(dirname(__DIR__)) . '/fixtures/templates/';
+        $this->templateDir = dirname(dirname(dirname(__DIR__))) . '/fixtures/templates/';
 
         // Save default config
         $this->oldConfig = Template::config();

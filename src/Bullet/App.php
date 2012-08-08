@@ -286,7 +286,17 @@ class App
         // Allow for './' current path shortcut (append given path to current one)
         if(strpos($path, './') === 0) {
             $path = substr($path, 2);
-            $path = $this->currentPath() . '/' . trim($path, '/');
+            $currentPath = $this->currentPath();
+            $pathLen = strlen($path);
+            $endsWithPath = substr_compare($currentPath, $path, -$pathLen, $pathLen) === 0;
+
+            // Don't double-stack path if it's the same as the current path
+            if($path != $currentPath && !$endsWithPath) {
+                $path = $currentPath . '/' . trim($path, '/');
+            // Don't append another segment to the path that matches the end of the current path already
+            } elseif($endsWithPath) {
+                $path = $currentPath;
+            }
         }
 
         if($path === null) {

@@ -347,9 +347,6 @@ class AppTest extends \PHPUnit_Framework_TestCase
             $app->path('foo', function() use($app) {
                 return $app->url();
             });
-            $app->path('foo2', function() {
-                $collect[] = 'foo2';
-            });
         });
 
         $response = $app->run('GET', '/test/foo/');
@@ -363,16 +360,43 @@ class AppTest extends \PHPUnit_Framework_TestCase
         $app->path('test', function($request) use($app) {
             $collect[] = 'test';
             $app->path('foo', function() use($app) {
-                return $app->url('./blogs', array('full' => false));
-            });
-            $app->path('foo2', function() {
-                $collect[] = 'foo2';
+                return $app->url('./blogs');
             });
         });
 
         $response = $app->run('GET', '/test/foo/');
         $this->assertEquals(200, $response->status());
         $this->assertEquals('cli:/test/foo/blogs', $response->content());
+    }
+
+    public function testUrlHelperReturnsRelativePathWithoutRepeating()
+    {
+        $app = new Bullet\App();
+        $app->path('test', function($request) use($app) {
+            $collect[] = 'test';
+            $app->path('foo', function() use($app) {
+                return $app->url('./test/foo'); // Should not be 'test/foo/test/foo'
+            });
+        });
+
+        $response = $app->run('GET', '/test/foo/');
+        $this->assertEquals(200, $response->status());
+        $this->assertEquals('cli:/test/foo', $response->content());
+    }
+
+    public function testUrlHelperReturnsRelativePathWithoutRepeatingLastPortion()
+    {
+        $app = new Bullet\App();
+        $app->path('test', function($request) use($app) {
+            $collect[] = 'test';
+            $app->path('foo', function() use($app) {
+                return $app->url('./foo'); // Should not be 'test/foo/foo'
+            });
+        });
+
+        $response = $app->run('GET', '/test/foo/');
+        $this->assertEquals(200, $response->status());
+        $this->assertEquals('cli:/test/foo', $response->content());
     }
 
     public function testUrlHelperReturnsGivenPath()

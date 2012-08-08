@@ -16,9 +16,10 @@ Requirements
 Rules 
 -----
 
- * Apps built around HTTP URIs, not forced MVC (but MVC-style separation
-   of concerns is still highly recommenended and encouraged)
- * App handles one segment of the path at a time, and executes the
+ * Apps are built around HTTP URIs and defined paths, not forced MVC
+   (but MVC-style separation of concerns is still highly recommenended and
+   encouraged)
+ * Bullet handles **one segment of the path at a time**, and executes the
    callback for that path segment before proceesing to the next segment 
    (path callbacks are executed from left to right, until the entire path
    is consumed).
@@ -30,9 +31,12 @@ Rules
    before Bullet can know to return a 404. This is why all your primary
    logic should be contained in `get`, `post`, or other method callbacks
    or in the model layer (and not in the bare `path` handlers).
- * If the path can be fully consumed, but the requested HTTP method
-   callback is not present, a 405 "Method Not Allowed" response will be
-   returned.
+ * If the path can be fully consumed, and HTTP method handlers are present
+   in the path but none are matched, a 405 "Method Not Allowed" response
+   will be returned.
+ * If the path can be fully consumed, and format handlers are present in
+   the path but none are matched, a 406 "Not Acceptable" response will
+   be returned.
 
 Installing with Composer
 -----
@@ -106,7 +110,9 @@ work found in typical MVC frameworks or other microframeworks where each
 callback or action is in a separate scope or controller method.
 
 ```
-$app = new Bullet\App();
+$app = new Bullet\App(array(
+    'template.cfg' => array('path' => __DIR__ . '/templates')
+));
 
 // 'blog' subdirectory
 $app->path('blog', function($request) use($app) {
@@ -122,19 +128,22 @@ $app->path('blog', function($request) use($app) {
         // Handle GET on this path
         $app->get(function() use($posts) {
             // Display all $posts
-            return "GET";
+            return $app->template('posts/index', compact('posts'));
         });
 
         // Handle POST on this path
         $app->post(function() use($posts) {
-            // Create new post in collection...
-            return "POST";
+            // Create new post
+            $post = new Post($request->post());
+            $mapper->save($post);
+            return $this->response($post->toJSON(), 201);
         });
 
         // Handle DELETE on this path
         $app->delete(function() use($posts) {
             // Delete entire posts collection
-            return "DELETE";
+            $posts->deleteAll();
+            return 200;
         });
 
     });
@@ -159,20 +168,25 @@ Just like regular paths, HTTP method handlers can be nested inside param
 callbacks, as well as other paths, more parameters, etc.
 
 ```
-$app = new Bullet\App();
+$app = new Bullet\App(array(
+    'template.cfg' => array('path' => __DIR__ . '/templates')
+));
 $app->path('posts', function($request) use($app) {
-    // Digit
-    $app->param('ctype_digit', function($request, $id) use($app) {
+    // Integer path segment, like 'posts/42'
+    $app->param('int', function($request, $id) use($app) {
         $app->get(function($request) use($id) {
-            // View resource
+            // View post
             return 'view_' . $id;
         });
         $app->put(function($request) use($id) {
             // Update resource
+            $post->data($request->post());
+            $post->save();
             return 'update_' . $id;
         });
         $app->delete(function($request) use($id) {
             // Delete resource
+            $post->delete();
             return 'delete_' . $id;
         });
     });
@@ -224,6 +238,114 @@ Content-Type:application/json; charset=UTF-8
 
 {"_links":{"restaurants":{"title":"Restaurants","href":"http:\/\/yourdomain.local\/restaurants"},"events":{"title":"Events","href":"http:\/\/yourdomain.local\/events"}}}
 ```
+
+Bullet Response Types
+--------------
+
+There are many possible values you can return from a route handler in
+Bullet to produce a valid HTTP response. Most types can be either
+returned directly, or wrapped in the `$app->response()` helper for
+additional customization.
+
+### Strings
+
+```
+$app = new Bullet\App();
+$app->path('/', function($request) use($app) {
+    return "Hello World";
+});
+$app->path('/', function($request) use($app) {
+    return $app->response("Hello Error!", 500);
+});
+```
+Strings result in a 200 OK response with a body containing the returned
+string. If you want to return a quick string response with a different
+HTTP status code, use the `$app->response()` helper.
+
+### Booleans
+
+```
+$app = new Bullet\App();
+$app->path('/', function($request) use($app) {
+    return true;
+});
+$app->path('notfound', function($request) use($app) {
+    return false;
+});
+```
+Boolean `false` results in a 404 "Not Found" HTTP response, and boolean
+`true` results in a 200 "OK" HTTP response.
+
+### Integers
+
+```
+$app = new Bullet\App();
+$app->path('teapot', function($request) use($app) {
+    return 418;
+});
+```
+Integers are mapped to their corresponding HTTP status code. In this
+example, a 418 "I'm a Teapot" HTTP response would be sent.
+
+### Arrays
+
+```
+$app = new Bullet\App();
+$app->path('foo', function($request) use($app) {
+    return array('foo' => 'bar');
+});
+$app->path('bar', function($request) use($app) {
+    return $app->response(array('bar' => 'baz'), 201);
+});
+```
+Arrays are automatically passed through `json_encode` and the appropriate
+`Content-Type: application/json` HTTP response header is sent.
+
+### Templates
+
+```
+// Configure template path with constructor
+$app = new Bullet\App(array(
+    'template.cfg' => array('path' => __DIR__ . '/templates')
+));
+
+// Routes
+$app->path('foo', function($request) use($app) {
+    return $app->template('foo');
+});
+$app->path('bar', function($request) use($app) {
+    return $app->template('bar', array('bar' => 'baz'), 201);
+});
+```
+The `$app->template()` helper returns an instance of
+`Bullet\View\Template` that is lazy-rendered on `__toString` when the
+HTTP response is sent. The first argument is a template name, and the
+second (optional) argument is an array of parameters to pass to the
+template for use.
+
+
+Nested Requests (HMVC style code re-use)
+----------------------------------------
+
+Since you explicitly `return` values from Bullet routes instead of
+sending output directly, nested/sub requests are straightforward and easy.
+All route handlers will return `Bullet\Response` instances (even if they
+return a raw string or other data type, they are wrapped in a response
+object by the `run` method), and they can be composed to form a single
+HTTP response.
+
+```
+$app = new Bullet\App();
+$app->path('foo', function($request) use($app) {
+    return "foo";
+});
+$app->path('bar', function($request) use($app) {
+    $foo = $app->run('GET', 'foo'); // $foo is now a `Bullet\Response` instance
+    return $foo->content() . "bar";
+});
+echo $app->run('GET', 'bar'); // echos 'foobar' with a 200 OK status
+```
+
 
 Running Tests
 -------------

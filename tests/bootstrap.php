@@ -8,7 +8,6 @@ $vendorPos = strpos(__DIR__, 'vendor/vlucas/bulletphp');
 if($vendorPos !== false) {
   // Package has been cloned within another composer package, resolve path to autoloader
   $vendorDir = substr(__DIR__, 0, $vendorPos) . 'vendor/';
-  echo "\n\n" . $vendorDir . "\n\n";
   $loader = require $vendorDir . 'autoload.php';
 } else {
   // Package itself (cloned standalone)

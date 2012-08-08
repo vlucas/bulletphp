@@ -39,10 +39,10 @@ class Template extends Response
      * @param $file string	Template filename to use
      * @param $module string	Module template file resides in
      */
-    public function __construct($file, $format = 'html', $path = null)
+    public function __construct($file, array $params = array())
     {
-        $this->file($file, $format);
-        $this->path($path);
+        $this->file($file, 'html');
+        $this->set($params);
 
         // Auto layout
         if(self::$_config['auto_layout']) {

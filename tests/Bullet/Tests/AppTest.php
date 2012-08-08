@@ -342,6 +342,76 @@ class AppTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals('update_546', $response->content());
     }
 
+    public function testPathExecutionIgnoresExtension()
+    {
+        $app = new Bullet\App();
+        $app->path('test', function($request) use($app) {
+            $collect[] = 'test';
+            $app->path('foo', function() use($app) {
+                return 'Not JSON';
+            });
+        });
+
+        $response = $app->run('GET', '/test/foo.json');
+        $this->assertEquals(200, $response->status());
+        $this->assertEquals('Not JSON', $response->content());
+    }
+
+    public function testPathWithExtensionExecutesMatchingFormatHandler()
+    {
+        $app = new Bullet\App();
+        $app->path('test', function($request) use($app) {
+            $collect[] = 'test';
+            $app->path('foo', function() use($app) {
+                $app->format('json', function() use($app) {
+                    return array('foo' => 'bar', 'bar' => 'baz');
+                });
+                $app->format('html', function() use($app) {
+                    return '<tag>Some HTML</tag>';
+                });
+            });
+        });
+
+        $response = $app->run('GET', '/test/foo.json');
+        $this->assertEquals(200, $response->status());
+        $this->assertEquals(json_encode(array('foo' => 'bar', 'bar' => 'baz')), $response->content());
+    }
+
+    public function testPathWithExtensionAndFormatHandlersButNoMatchingFormatHandlerReturns406()
+    {
+        $app = new Bullet\App();
+        $app->path('test', function($request) use($app) {
+            $collect[] = 'test';
+            $app->path('foo', function() use($app) {
+                $app->format('json', function() use($app) {
+                    return array('foo' => 'bar', 'bar' => 'baz');
+                });
+                $app->format('html', function() use($app) {
+                    return '<tag>Some HTML</tag>';
+                });
+            });
+        });
+
+        $response = $app->run('GET', '/test/foo.xml');
+        $this->assertEquals(406, $response->status());
+        $this->assertEquals('Not Acceptable', $response->content());
+    }
+
+    public function testNestedRun()
+    {
+        $app = new Bullet\App();
+        $app->path('foo', function($request) use($app) {
+            return "foo";
+        });
+        $app->path('bar', function($request) use($app) {
+            $foo = $app->run('GET', 'foo'); // $foo is now a `Bullet\Response` instance
+            return $foo->content() . "bar";
+        });
+        $response = $app->run('GET', 'bar');
+        $this->assertEquals(200, $response->status());
+        $this->assertEquals('foobar', $response->content());
+    }
+
     public function testUrlHelperReturnsCurrentPathWhenCalledWithNoArguments()
     {
         $app = new Bullet\App();

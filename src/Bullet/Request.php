@@ -14,6 +14,7 @@ class Request
 {
     // Request URL
     protected $_url;
+    protected $_format = 'html';
 
     // Request parameters
     protected $_params = array();
@@ -349,6 +350,23 @@ class Request
         }
 
         return (isset($_ENV[$key])) ? $_ENV[$key] : $default;
+    }
+
+
+    /**
+    * Format getter/setter
+    *
+    * If no $format is passed, returns the current format
+    *
+    * @param string $key
+    * @return string Format
+    */
+    public function format($format = null)
+    {
+        if (null !== $format) {
+            $this->_format = $format;
+        }
+        return $this->_format;
     }
 
 

@@ -44,6 +44,11 @@ class App extends \Pimple
 
         // Pimple constructor
         parent::__construct($values);
+
+        // Template configuration settings if given
+        if(isset($this['template.cfg'])) {
+            View\Template::config($this['template.cfg']);
+        }
     }
 
     public function path($path, \Closure $callback)
@@ -100,6 +105,13 @@ class App extends \Pimple
             $this->_request = new \Bullet\Request();
             $this->_requestMethod = strtoupper($method);
             $this->_requestPath = $uri;
+        }
+
+        // Detect extension and assign it as the requested format (default is 'html')
+        if(strpos($this->_requestPath, '.') !== false) {
+            $this->_request->format(end(explode('.', $this->_requestPath)));
+            // Remove extension from path for path execution
+            $this->_requestPath = substr($this->_requestPath, 0, -(strlen($this->_request->format())+1));
         }
 
         // Normalize request path
@@ -205,20 +217,34 @@ class App extends \Pimple
         }
 
         // Run 'method' callbacks if the path is the full requested one
-        if($this->isRequestPath()) {
+        if($this->isRequestPath() && count($this->_callbacks['method']) > 0) {
             // If there are ANY method callbacks, use if matches method, return 405 if not
             // If NO method callbacks are present, path return value will be used, or 404
-            if(count($this->_callbacks['method']) > 0) {
-                if(isset($this->_callbacks['method'][$method])) {
-                    $cb = $this->_callbacks['method'][$method];
-                    $res = call_user_func($cb, $this->request());
-                } else {
-                    $res = $this->response(null, 405);
-                }
+            if(isset($this->_callbacks['method'][$method])) {
+                $cb = $this->_callbacks['method'][$method];
+                $res = call_user_func($cb, $this->request());
+            } else {
+                $res = $this->response(null, 405);
             }
         } else {
             // Empty out collected method callbacks
             $this->_callbacks['method'] = array();
+        }
+
+        // Run 'format' callbacks if the path is the full one AND the requested format matches a callback
+        $format = $this->_request->format();
+        if($this->isRequestPath() && count($this->_callbacks['format']) > 0) {
+            // If there are ANY format callbacks, use if matches format, return 406 if not
+            // If NO method callbacks are present, path return value will be used, or 404
+            if(isset($this->_callbacks['format'][$format])) {
+                $cb = $this->_callbacks['format'][$format];
+                $res = call_user_func($cb, $this->request());
+            } else {
+                $res = $this->response(null, 406);
+            }
+        } else {
+            // Empty out collected method callbacks
+            $this->_callbacks['format'] = array();
         }
 
         return $res;
@@ -285,6 +311,18 @@ class App extends \Pimple
     }
 
     /**
+     * Handle HTTP content type as output format
+     *
+     * @param string $format HTTP content type format to handle for
+     * @param \Closure $callback Closure to execute to handle specified format
+     */
+    public function format($format, \Closure $callback)
+    {
+        $this->_callbacks['format'][strtolower($format)] = $this->_prepClosure($callback);
+        return $this;
+    }
+
+    /**
      * Build URL path for
      */
     public function url($path = null)
@@ -321,6 +359,19 @@ class App extends \Pimple
         $url = rtrim($url, '/') . '/' . ltrim($path, '/');
 
         return $url;
+    }
+
+    /**
+     * Return instance of Bullet\View\Template
+     *
+     * @param string $name Template name
+     * @param array $params Array of params to set
+     */
+    public function template($name, array $params = array())
+    {
+        $tpl = new View\Template($name);
+        $tpl->set($params);
+        return $tpl;
     }
 
     /**

@@ -93,4 +93,19 @@ class TemplateTest extends \PHPUnit_Framework_TestCase
         $tpl->layout('div');
         $this->assertEquals('<div><?php echo $yield; ?></div>', $tpl->content(false));
     }
+
+    public function testTemplateHelperReturnsTemplateObjectInstance()
+    {
+        $app = new Bullet\App(array(
+            'template.cfg' => array('path' => $this->templateDir)
+        ));
+        $app->path('template-test', function($request) use($app) {
+            $app->get(function($request) use($app) {
+                return $app->template('test');
+            });
+        });
+        $tpl = $app->run('GET', 'template-test');
+        $this->assertInstanceOf('Bullet\View\Template', $tpl);
+        $this->assertEquals('<p>Test</p>', $tpl->content());
+    }
 }

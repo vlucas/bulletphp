@@ -190,33 +190,12 @@ echo $app->run('DELTE', '/posts/42'); // 'delete_42'
 echo $app->run('DELTE', '/posts/my-post-title'); // 'my-post-title'
 ```
 
-Using Rackem
-------------
+Running Tests
+-------------
 
-Bullet can be optionally used with Rackem for greater extensibility if you
-want to use middleware with your app. No code changes are required for
-your app.
-
-The primary change is simply calling `Rack::run($app)` instead of
-directly calling `$app->run($method, $url)` in your index.php file. This
-will run your app through Rack so you can plugin and use custom
-middleware more easily.
-
-```
-<?php
-use \Rackem\Rack;
-require __DIR__ . '/vendor/autoload.php';
-
-// Your App
-$app = new Bullet\App();
-$app->path('/', function($request) {
-    return "Hello World!";
-});
-
-// Rack it up!
-Rack::use_middleware("\Rackem\ShowExceptions");
-Rack::run($app);
-```
+To run the Bullet test suite, simply run `phpunit` in the root of the
+directory where the bullet files are in. Please make sure to run the
+test suite before submitting and pull requests for any contributions.
 
 Credits
 -------
@@ -226,8 +205,4 @@ and encourage a more resource-oriented design - is something I have been
 thinking about for a long time, and was finally moved to create it after
 seeing @joshbuddy give a presentation on [Renee](http://reneerb.com/) at
 Confoo 2012.
-
-Bullet optionally uses [Rackem](https://github.com/tamagokun/rackem)
-(PHP implementation of Ruby's Rack) to make using middleware a
-breeze.
 

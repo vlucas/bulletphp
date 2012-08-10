@@ -16,7 +16,7 @@ Requirements
 Rules 
 -----
 
- * Apps are built around HTTP URIs and defined paths, not forced MVC
+ * Apps are **built around HTTP URIs** and defined paths, not forced MVC
    (but MVC-style separation of concerns is still highly recommenended and
    encouraged)
  * Bullet handles **one segment of the path at a time**, and executes the
@@ -37,6 +37,29 @@ Rules
  * If the path can be fully consumed, and format handlers are present in
    the path but none are matched, a 406 "Not Acceptable" response will
    be returned.
+
+Advantages
+----------
+
+ * **Super flexible routing**. Because of the way the routing callbacks are
+   nested, Bullet's routing system is one of the most flexible of any other PHP
+   framework or library. You can build any URL you want and respond to any HTTP
+   method on that URL. Routes are not restricted to specific patterns or URL
+   formats, and do not require a controller with specific method names to
+   respond to specific HTTP methods. You can nest routes as many levels deep as
+   you want to expose nested resources like `posts/42/comments/943/edit` with a
+   level of ease not found in most other routing libraries or frameworks.
+
+ * **Reduced code duplication (DRY)**. Bullet takes full advantage of its nested
+   closure routing system to reduce a lot of typical code duplication required
+   in most other frameworks. In a typical MVC framework controller, some code
+   has to be duplicated across methods that perform CRUD operations to run ACL
+   checks and load required resources like a Post object to view, edit or delete.
+   With Bullet's nested closure style, this code can be written just once in a
+   path or param callback, and then you can `use` the loaded object in subsequent
+   path, param, or HTTP method handlers. This eliminates the need for "before"
+   hooks and filters, because you can just run the checks and load objects you
+   need before you define other nested paths and `use` them when required.
 
 Installing with Composer
 -----

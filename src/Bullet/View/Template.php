@@ -261,8 +261,7 @@ class Template extends Response
      */
     public function partial($template, array $vars = array())
     {
-        $partial = new static($template, $this->format(), $this->path());
-        return $partial->set($vars);
+        return new static($template, $vars);
     }
 
 

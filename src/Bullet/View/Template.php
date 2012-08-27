@@ -340,7 +340,7 @@ class Template extends Response
             self::$_config['auto_layout'] = false;
 
             // New template for layout
-            $layout = new static($this->layout());
+            $layout = new self($this->layout());
 
             // Set layout path if specified
             if(isset(self::$_config['path_layouts'])) {

@@ -1,5 +1,6 @@
 <?php
 error_reporting(-1);
+date_default_timezone_set('UTC');
 
 /**
  * Path trickery ensures test suite will always run, standalone or within

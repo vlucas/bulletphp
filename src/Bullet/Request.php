@@ -17,13 +17,45 @@ class Request
     protected $_format = 'html';
 
     // Request parameters
+    protected $_headers = array();
     protected $_params = array();
+    protected $_accept;
 
+    protected $_mimeTypes = array(
+        'txt' => 'text/plain',
+        'html' => 'text/html',
+        'xhtml' => 'application/xhtml+xml',
+        'xml' => 'application/xml',
+        'css' => 'text/css',
+        'js' => 'application/javascript',
+        'json' => 'application/json',
+        'csv' => 'text/csv',
+
+        // images
+        'png' => 'image/png',
+        'jpe' => 'image/jpeg',
+        'jpeg' => 'image/jpeg',
+        'jpg' => 'image/jpeg',
+        'gif' => 'image/gif',
+        'bmp' => 'image/bmp',
+        'ico' => 'image/vnd.microsoft.icon',
+        'tiff' => 'image/tiff',
+        'tif' => 'image/tiff',
+        'svg' => 'image/svg+xml',
+        'svgz' => 'image/svg+xml',
+
+        // archives
+        'zip' => 'application/zip',
+        'rar' => 'application/x-rar-compressed',
+
+        // adobe
+        'pdf' => 'application/pdf'
+    );
 
     /**
      * Ensure magic quotes are not mucking up request data
      */
-    public function __construct()
+    public function __construct($method = 'GET', $url = null, array $headers = array())
     {
         // Die magic_quotes, just die...
         if(get_magic_quotes_gpc()) {
@@ -34,6 +66,30 @@ class Request
             array_walk_recursive($_POST, $stripslashes_gpc);
             array_walk_recursive($_COOKIE, $stripslashes_gpc);
             array_walk_recursive($_REQUEST, $stripslashes_gpc);
+        }
+
+        // Set Method
+        if($method !== null) {
+            $this->_method = $method;
+        }
+
+        // Set URL
+        if($url !== null) {
+            $this->_url = $url;
+        }
+
+        // Set Headers
+        $this->_headers = $headers;
+        if(empty($this->_headers)) {
+            $this->_headers = $_SERVER;
+        }
+
+        // Parse 'Accept' header to see what format is requested
+        $accept = $this->accept();
+        if(!empty($accept)) {
+            // Use first 'accept' type as the default format
+            $firstType = array_shift($accept);
+            $this->format($firstType);
         }
 
         // Properly handle PUT and DELETE request params
@@ -201,6 +257,28 @@ class Request
 
 
     /**
+     * Get array of accept formats or check if request accepts a given format
+     */
+    public function accept($format = null)
+    {
+        if($this->_accept === null) {
+            $this->parseAcceptHeader();
+        }
+
+        // Check if request accepts a particular format
+        if($format !== null) {
+            // blah
+            if(isset($this->_mimeTypes[$format])) {
+                return in_array($this->_mimeTypes[$format], $this->_accept);
+            }
+            return false;
+        }
+
+        return $this->_accept;
+    }
+
+
+    /**
     * Retrieve request parameters
     *
     * @return array Returns array of all GET, POST, and set params
@@ -364,8 +442,20 @@ class Request
     public function format($format = null)
     {
         if (null !== $format) {
+            // If using full mime type, we only need the extension
+            if(strpos($format, '/') !== false && in_array($format, $this->_mimeTypes)) {
+                $format = array_search($format, $this->_mimeTypes);
+            }
             $this->_format = $format;
         }
+
+        // Detect extension and assign it as the requested format (overrides 'Accept' header)
+        $dotPos = strpos($this->url(), '.');
+        if($dotPos !== false) {
+            $ext = substr($this->url(), $dotPos+1);
+            $this->_format = $ext;
+        }
+
         return $this->_format;
     }
 
@@ -380,10 +470,15 @@ class Request
     */
     public function header($header)
     {
-        // Try to get it from the $_SERVER array first
+        // Try to get it from the keys that $_SERVER populates first
         $temp = 'HTTP_' . strtoupper(str_replace('-', '_', $header));
-        if (!empty($_SERVER[$temp])) {
-            return $_SERVER[$temp];
+        if (!empty($this->_headers[$temp])) {
+            return $this->_headers[$temp];
+        }
+
+        // Try to get direct header key now
+        if (!empty($this->_headers[$header])) {
+            return $this->_headers[$header];
         }
 
         // This seems to be the only way to get the Authorization header on Apache
@@ -405,14 +500,18 @@ class Request
     */
     public function method()
     {
-        $sm = strtoupper($this->server('REQUEST_METHOD', 'GET'));
+        if($this->_method === null) {
+            $sm = strtoupper($this->server('REQUEST_METHOD', 'GET'));
 
-        // POST + '_method' override to emulate REST behavior in browsers that do not support it
-        if('POST' == $sm && $this->get('_method')) {
-            return strtoupper($this->get('_method'));
+            // POST + '_method' override to emulate REST behavior in browsers that do not support it
+            if('POST' == $sm && $this->get('_method')) {
+                return strtoupper($this->get('_method'));
+            }
+
+            $this->_method = $sm;
         }
 
-        return $sm;
+        return $this->_method;
     }
 
 
@@ -690,4 +789,49 @@ class Request
     {
         return ($this->header('USER_AGENT') == 'Shockwave Flash');
     }
+
+
+    /**
+     * Parse 'Accept' HTTP header
+     */
+    protected function parseAcceptHeader()
+    {
+        $hdr = $this->header('Accept');
+        $accept = array();
+
+        foreach (preg_split('/\s*,\s*/', $hdr) as $i => $term) {
+            $o = new \stdclass;
+            $o->pos = $i;
+            if (preg_match(",^(\S+)\s*;\s*(?:q|level)=([0-9\.]+),i", $term, $M)) {
+                $o->type = $M[1];
+                $o->q = (double) $M[2];
+            } else {
+                $o->type = $term;
+                $o->q = 1;
+            }
+            $accept[] = $o;
+        }
+
+        usort($accept, function ($a, $b) {
+            /* first tier: highest q factor wins */
+            $diff = $b->q - $a->q;
+            if ($diff > 0) {
+                $diff = 1;
+            } else if ($diff < 0) {
+                $diff = -1;
+            } else {
+                /* tie-breaker: first listed item wins */
+                $diff = $a->pos - $b->pos;
+            }
+            return $diff;
+        });
+
+        $this->_accept = array();
+        foreach ($accept as $a) {
+            if(empty($a->type)) { continue; }
+            $this->_accept[$a->type] = $a->type;
+        }
+        return $this->_accept;
+    }
 }
+

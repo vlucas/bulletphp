@@ -97,16 +97,16 @@ class App extends \Pimple
     {
         $response = false;
 
+        // If Request instance was passed in as the first parameter
         if($method instanceof \Bullet\Request) {
             $request = $method;
             $this->_request = $request;
-            $this->_requestMethod = strtoupper($request->method());
-            $this->_requestPath = $request->url();
+        // Create new Request object from passed method and URI
         } else {
-            $this->_request = new \Bullet\Request();
-            $this->_requestMethod = strtoupper($method);
-            $this->_requestPath = $uri;
+            $this->_request = new \Bullet\Request($method, $uri);
         }
+        $this->_requestMethod = strtoupper($this->_request->method());
+        $this->_requestPath = $this->_request->url();
 
         // Detect extension and assign it as the requested format (default is 'html')
         $dotPos = strpos($this->_requestPath, '.');

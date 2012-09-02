@@ -53,9 +53,14 @@ class Request
     );
 
     /**
-     * Ensure magic quotes are not mucking up request data
+     * Setup request object and ensure magic quotes are not mucking up request data
+     *
+     * @param string HTTP Method
+     * @param string Request URI
+     * @param array  Request parameters
+     * @param array  HTTP Headers
      */
-    public function __construct($method = 'GET', $url = null, array $headers = array())
+    public function __construct($method = null, $url = null, array $params = array(), array $headers = array())
     {
         // Die magic_quotes, just die...
         if(get_magic_quotes_gpc()) {
@@ -76,6 +81,11 @@ class Request
         // Set URL
         if($url !== null) {
             $this->_url = $url;
+        }
+
+        // Set params if given
+        if(!empty($params)) {
+            $this->_params = $params;
         }
 
         // Set Headers

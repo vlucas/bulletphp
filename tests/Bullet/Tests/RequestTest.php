@@ -24,13 +24,13 @@ class RequestTest extends \PHPUnit_Framework_TestCase
 
     function testExtensionOverridesAcceptHeader()
     {
-        $r = new Bullet\Request('PUT', '/users/42.xml', array('Accept' => 'text/html,application/json'));
+        $r = new Bullet\Request('PUT', '/users/42.xml', array(), array('Accept' => 'text/html,application/json'));
         $this->assertEquals('xml', $r->format());
     }
 
     function testAccept()
     {
-        $r = new Bullet\Request('', '', array('Accept' => 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8,application/json'));
+        $r = new Bullet\Request('', '', array(), array('Accept' => 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8,application/json'));
         $this->assertTrue($r->accept('html'));
         $this->assertTrue($r->accept('xhtml'));
         $this->assertTrue($r->accept('xml'));
@@ -40,7 +40,7 @@ class RequestTest extends \PHPUnit_Framework_TestCase
 
     function testAcceptHeader()
     {
-        $r = new Bullet\Request('', '', array('Accept' => 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8,application/json'));
+        $r = new Bullet\Request('', '', array(), array('Accept' => 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8,application/json'));
         $this->assertEquals(array(
           "text/html" => "text/html",
           "application/xhtml+xml" => "application/xhtml+xml",
@@ -54,7 +54,7 @@ class RequestTest extends \PHPUnit_Framework_TestCase
     {
         $app = new Bullet\App();
         // Accept only JSON and request URL with no extension
-        $req = new Bullet\Request('PUT', '/foo', array('Accept' => 'application/json'));
+        $req = new Bullet\Request('PUT', '/foo', array(), array('Accept' => 'application/json'));
         $app->path('foo', function($request) use($app) {
             $app->format('json', function($request) {
                 return array('foo' => 'bar');

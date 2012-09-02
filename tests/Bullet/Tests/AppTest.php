@@ -397,6 +397,28 @@ class AppTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals('Not Acceptable', $response->content());
     }
 
+    public function testFormatHanldersRunUsingAcceptHeader()
+    {
+        $app = new Bullet\App();
+        $app->path('posts', function($request) use($app) {
+            $app->get(function() use($app) {
+                $app->format('json', function() use($app) {
+                    return array('listing' => 'something');
+                });
+            });
+            $app->post(function($request) use($app) {
+                $app->format('json', function() use($app) {
+                    return $app->response(array('created' => 'something'), 201);
+                });
+            });
+        });
+
+        $request = new Bullet\Request('POST', 'posts', array(), array('Accept' => 'application/json'));
+        $response = $app->run($request);
+        $this->assertEquals(201, $response->status());
+        $this->assertEquals('{"created":"something"}', $response->content());
+    }
+
     public function testNestedRun()
     {
         $app = new Bullet\App();
@@ -488,6 +510,34 @@ class AppTest extends \PHPUnit_Framework_TestCase
         $response = $app->run('GET', '/test/foo/');
         $this->assertEquals(200, $response->status());
         $this->assertEquals('cli:/blog/42/edit', $response->content());
+    }
+
+    public function testStatusOnResponseObjectReturnsCorrectStatus()
+    {
+        $app = new Bullet\App();
+        $app->path('posts', function($request) use($app) {
+            $app->post(function() use($app) {
+                return $app->response('Created something!', 201);
+            });
+        });
+
+        $actual = $app->run('POST', 'posts');
+        $this->assertEquals(201, $actual->status());
+    }
+
+    public function testStatusOnResponseObjectReturnsCorrectStatusAsJSON()
+    {
+        $app = new Bullet\App();
+        $app->path('posts', function($request) use($app) {
+            $app->post(function() use($app) {
+                $app->format('json', function() use($app) {
+                    return $app->response(array('created' => 'something'), 201);
+                });
+            });
+        });
+
+        $actual = $app->run('POST', 'posts.json');
+        $this->assertEquals(201, $actual->status());
     }
 
     public function testExceptionsAreCaughtWhenCustomHandlerIsRegistered()

@@ -62,6 +62,7 @@ class Response
         } else {
             $this->_headers[$type] = $content;
         }
+        return $this;
     }
 
 
@@ -76,6 +77,7 @@ class Response
             return $this->_status;
         }
         $this->_status = $status;
+        return $this;
     }
 
 
@@ -90,6 +92,7 @@ class Response
             return $this->_encoding;
         }
         $this->_encoding = $encoding;
+        return $this;
     }
 
 
@@ -122,6 +125,7 @@ class Response
             return $this->_contentType;
         }
         $this->_contentType = $contentType;
+        return $this;
     }
 
 
@@ -131,6 +135,7 @@ class Response
     public function clearHeaders()
     {
         $this->_headers = array();
+        return $this;
     }
 
 
@@ -142,6 +147,7 @@ class Response
         if(isset($this->_headers['Location'])) {
             unset($this->_headers['Location']);
         }
+        return $this;
     }
 
 
@@ -166,6 +172,7 @@ class Response
     {
         $this->status($status);
         $this->header('Location', $location);
+        return $this;
     }
 
 

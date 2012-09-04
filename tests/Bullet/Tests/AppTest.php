@@ -19,6 +19,18 @@ class AppTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals($collect, $expect);
     }
 
+    public function testMultiplePathsWithAray()
+    {
+        $app = new Bullet\App();
+        $app->path(array('test', 'test2'), function() use($app) {
+            return "test";
+        });
+
+        $res1 = $app->run('GET', '/test/');
+        $res2 = $app->run('GET', '/test2/');
+        $this->assertEquals($res1->content(), $res2->content());
+    }
+
     public function testDoublePathGetWithBranch()
     {
         $collect = array();

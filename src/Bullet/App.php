@@ -54,8 +54,10 @@ class App extends \Pimple
 
     public function path($path, \Closure $callback)
     {
-        $path = trim($path, '/');
-        $this->_callbacks['path'][$path] = $this->_prepClosure($callback);
+        foreach((array) $path as $p) {
+            $p = trim($p, '/');
+            $this->_callbacks['path'][$p] = $this->_prepClosure($callback);
+        }
         return $this;
     }
 

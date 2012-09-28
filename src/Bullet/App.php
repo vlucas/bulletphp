@@ -345,12 +345,15 @@ class App extends \Pimple
             $path = substr($path, 2);
             $currentPath = $this->currentPath();
             $pathLen = strlen($path);
+            $startsWithPath = strpos($path, $currentPath) === 0;
             $endsWithPath = substr_compare($currentPath, $path, -$pathLen, $pathLen) === 0;
 
             // Don't double-stack path if it's the same as the current path
-            if($path != $currentPath && !$endsWithPath) {
+            if($path != $currentPath && !$startsWithPath && !$endsWithPath) {
                 $path = $currentPath . '/' . trim($path, '/');
             // Don't append another segment to the path that matches the end of the current path already
+            } elseif($startsWithPath) {
+                // Do nothing
             } elseif($endsWithPath) {
                 $path = $currentPath;
             }

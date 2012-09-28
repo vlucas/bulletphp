@@ -495,7 +495,6 @@ class AppTest extends \PHPUnit_Framework_TestCase
     {
         $app = new Bullet\App();
         $app->path('test', function($request) use($app) {
-            $collect[] = 'test';
             $app->path('foo', function() use($app) {
                 return $app->url('./foo'); // Should not be 'test/foo/foo'
             });
@@ -504,6 +503,18 @@ class AppTest extends \PHPUnit_Framework_TestCase
         $response = $app->run('GET', '/test/foo/');
         $this->assertEquals(200, $response->status());
         $this->assertEquals('cli:/test/foo', $response->content());
+    }
+
+    public function testUrlHelperReturnsRelativePathWithoutRepeatingBasePath()
+    {
+        $app = new Bullet\App();
+        $app->path('events', function($request) use($app) {
+            return $app->url('./events/42'); // Should not be 'events/events/42' or just 'events'
+        });
+
+        $response = $app->run('GET', '/events/');
+        $this->assertEquals(200, $response->status());
+        $this->assertEquals('cli:/events/42', $response->content());
     }
 
     public function testUrlHelperReturnsGivenPath()

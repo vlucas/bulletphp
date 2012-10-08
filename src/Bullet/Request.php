@@ -423,7 +423,7 @@ class Request
 
 
     /**
-    * Retrieve a member of the $_ENV superglobal
+    * Retrieve a member of the $_ENV or $_SERVER superglobal (via `getenv`)
     *
     * If no $key is passed, returns the entire $_ENV array.
     *
@@ -437,7 +437,8 @@ class Request
             return $_ENV;
         }
 
-        return (isset($_ENV[$key])) ? $_ENV[$key] : $default;
+        $var = getenv($key);
+        return ($var !== false) ? $var : $default;
     }
 
 

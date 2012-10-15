@@ -10,11 +10,11 @@ and execute deeper paths as paths and parameters are matched.
 Requirements
 ------------
 
- * PHP 5.3+ (heavy use of closures)
+ * PHP 5.3+ (PHP 5.4 recommended)
  * [Composer](http://getcomposer.org) for all package management and
    autoloading (may require command-line access)
 
-Rules 
+Rules
 -----
 
  * Apps are **built around HTTP URIs** and defined paths, not forced MVC
@@ -68,50 +68,50 @@ Use the [basic usage guide](http://getcomposer.org/doc/01-basic-usage.md),
 or follow the steps below:
 
 Setup your `composer.json` file at the root of your project
-```
-{
-    "require": {
-        "vlucas/bulletphp": "*"
+
+    {
+        "require": {
+            "vlucas/bulletphp": "*"
+        }
     }
-}
-```
+
 
 Install Composer
-```
-curl -s http://getcomposer.org/installer | php
-```
+
+    curl -s http://getcomposer.org/installer | php
+
 
 Install Dependencies (will download Bullet)
-```
-php composer.phar install
-```
+
+    php composer.phar install
+
 
 Create `index.php` (use the minimal example below to get started)
-```
-<?php
-require __DIR__ . '/vendor/autoload.php';
 
-// Your App
-$app = new Bullet\App();
-$app->path('/', function($request) {
-    return "Hello World!";
-});
+    <?php
+    require __DIR__ . '/vendor/autoload.php';
 
-// Run the app! (takes $method, $url or Bullet\Request object)
-echo $app->run(new Bullet\Request());
-```
+    // Your App
+    $app = new Bullet\App();
+    $app->path('/', function($request) {
+        return "Hello World!";
+    });
+
+    // Run the app! (takes $method, $url or Bullet\Request object)
+    echo $app->run(new Bullet\Request());
+
 
 Use an `.htaccess` file for mod_rewrite (if you're using Apache)
-```
-<IfModule mod_rewrite.c>
-  RewriteEngine On
 
-  # Reroute any incoming requestst that is not an existing directory or file
-  RewriteCond %{REQUEST_FILENAME} !-d
-  RewriteCond %{REQUEST_FILENAME} !-f
-  RewriteRule ^(.*)$ index.php?u=$1 [L,QSA]
-</IfModule>
-```
+    <IfModule mod_rewrite.c>
+      RewriteEngine On
+
+      # Reroute any incoming requestst that is not an existing directory or file
+      RewriteCond %{REQUEST_FILENAME} !-d
+      RewriteCond %{REQUEST_FILENAME} !-f
+      RewriteRule ^(.*)$ index.php?u=$1 [L,QSA]
+    </IfModule>
+
 
 View it in your browser!
 
@@ -133,49 +133,49 @@ loading records, checking authentication, and performing other setup
 work found in typical MVC frameworks or other microframeworks where each
 callback or action is in a separate scope or controller method.
 
-```
-$app = new Bullet\App(array(
-    'template.cfg' => array('path' => __DIR__ . '/templates')
-));
 
-// 'blog' subdirectory
-$app->path('blog', function($request) use($app) {
-    
-    $blog = somehowGetBlogMapper(); // Your ORM or other methods here
+    $app = new Bullet\App(array(
+        'template.cfg' => array('path' => __DIR__ . '/templates')
+    ));
 
-    // 'posts' subdirectory in 'blog' ('blog/posts')
-    $app->path('posts', function() use($app, $blog) {
+    // 'blog' subdirectory
+    $app->path('blog', function($request) use($app) {
 
-        // Load posts once for handling by GET/POST/DELETE below
-        $posts = $blog->allPosts(); // Your ORM or other methods here
+        $blog = somehowGetBlogMapper(); // Your ORM or other methods here
 
-        // Handle GET on this path
-        $app->get(function() use($posts) {
-            // Display all $posts
-            return $app->template('posts/index', compact('posts'));
+        // 'posts' subdirectory in 'blog' ('blog/posts')
+        $app->path('posts', function() use($app, $blog) {
+
+            // Load posts once for handling by GET/POST/DELETE below
+            $posts = $blog->allPosts(); // Your ORM or other methods here
+
+            // Handle GET on this path
+            $app->get(function() use($posts) {
+                // Display all $posts
+                return $app->template('posts/index', compact('posts'));
+            });
+
+            // Handle POST on this path
+            $app->post(function() use($posts) {
+                // Create new post
+                $post = new Post($request->post());
+                $mapper->save($post);
+                return $this->response($post->toJSON(), 201);
+            });
+
+            // Handle DELETE on this path
+            $app->delete(function() use($posts) {
+                // Delete entire posts collection
+                $posts->deleteAll();
+                return 200;
+            });
+
         });
-
-        // Handle POST on this path
-        $app->post(function() use($posts) {
-            // Create new post
-            $post = new Post($request->post());
-            $mapper->save($post);
-            return $this->response($post->toJSON(), 201);
-        });
-
-        // Handle DELETE on this path
-        $app->delete(function() use($posts) {
-            // Delete entire posts collection
-            $posts->deleteAll();
-            return 200;
-        });
-
     });
-});
 
-// Run the app and echo the response
-echo $app->run("GET", "blog/posts");
-```
+    // Run the app and echo the response
+    echo $app->run("GET", "blog/posts");
+
 
 ### Capturing Path Parameters
 
@@ -191,42 +191,42 @@ captured parameter is passed to the Closure as the second argument.
 Just like regular paths, HTTP method handlers can be nested inside param
 callbacks, as well as other paths, more parameters, etc.
 
-```
-$app = new Bullet\App(array(
-    'template.cfg' => array('path' => __DIR__ . '/templates')
-));
-$app->path('posts', function($request) use($app) {
-    // Integer path segment, like 'posts/42'
-    $app->param('int', function($request, $id) use($app) {
-        $app->get(function($request) use($id) {
-            // View post
-            return 'view_' . $id;
+
+    $app = new Bullet\App(array(
+        'template.cfg' => array('path' => __DIR__ . '/templates')
+    ));
+    $app->path('posts', function($request) use($app) {
+        // Integer path segment, like 'posts/42'
+        $app->param('int', function($request, $id) use($app) {
+            $app->get(function($request) use($id) {
+                // View post
+                return 'view_' . $id;
+            });
+            $app->put(function($request) use($id) {
+                // Update resource
+                $post->data($request->post());
+                $post->save();
+                return 'update_' . $id;
+            });
+            $app->delete(function($request) use($id) {
+                // Delete resource
+                $post->delete();
+                return 'delete_' . $id;
+            });
         });
-        $app->put(function($request) use($id) {
-            // Update resource
-            $post->data($request->post());
-            $post->save();
-            return 'update_' . $id;
-        });
-        $app->delete(function($request) use($id) {
-            // Delete resource
-            $post->delete();
-            return 'delete_' . $id;
+        // All printable characters except space
+        $app->param('ctype_graph', function($request, $slug) use($app) {
+            return $slug; // 'my-post-title'
         });
     });
-    // All printable characters except space
-    $app->param('ctype_graph', function($request, $slug) use($app) {
-        return $slug; // 'my-post-title'
-    });
-});
 
-// Results of above code
-echo $app->run('GET',   '/posts/42'); // 'view_42'
-echo $app->run('PUT',   '/posts/42'); // 'update_42'
-echo $app->run('DELTE', '/posts/42'); // 'delete_42'
+    // Results of above code
+    echo $app->run('GET',   '/posts/42'); // 'view_42'
+    echo $app->run('PUT',   '/posts/42'); // 'update_42'
+    echo $app->run('DELTE', '/posts/42'); // 'delete_42'
 
-echo $app->run('DELTE', '/posts/my-post-title'); // 'my-post-title'
-```
+    echo $app->run('DELTE', '/posts/my-post-title'); // 'my-post-title'
+
 
 Returning JSON (Useful for PHP JSON APIs)
 -----------------------------------------
@@ -236,32 +236,43 @@ an array from a route handler (callback), Bullet will assume the
 response is JSON and automatically `json_encode` the array and return the
 HTTP response with the appropriate `Content-Type: application/json` header.
 
-```
-$app->path('/', function($request) use($app) {
-  $app->get(function($request) use($app) {
-    // Links to available resources for the API
-    return array(
-      '_links' => array(
-        'restaurants' => array(
-          'title' => 'Restaurants',
-          'href' => $app->url('restaurants')
-        ),
-        'events' => array(
-          'title' => 'Events',
-          'href' => $app->url('events')
-        )
-      )
-    );
-  });
-});
-```
+
+    $app->path('/', function($request) use($app) {
+        $app->get(function($request) use($app) {
+            // Links to available resources for the API
+            $data = array(
+                '_links' => array(
+                    'restaurants' => array(
+                        'title' => 'Restaurants',
+                        'href' => $app->url('restaurants')
+                    ),
+                    'events' => array(
+                        'title' => 'Events',
+                        'href' => $app->url('events')
+                    )
+                )
+            );
+
+            // Format responders
+            $app->format('json', function($request), use($app, $data) {
+                return $data; // Auto json_encode on arrays for JSON requests
+            });
+            $app->format('xml', function($request), use($app, $data) {
+                return custom_function_convert_array_to_xml($data);
+            });
+            $app->format('html', function($request), use($app, $data) {
+                return $app->template('index', array('links' => $data));
+            });
+        });
+    });
+
 
 ### HTTP Response Bullet Sends:
-```
-Content-Type:application/json; charset=UTF-8
 
-{"_links":{"restaurants":{"title":"Restaurants","href":"http:\/\/yourdomain.local\/restaurants"},"events":{"title":"Events","href":"http:\/\/yourdomain.local\/events"}}}
-```
+    Content-Type:application/json
+
+    {"_links":{"restaurants":{"title":"Restaurants","href":"http:\/\/yourdomain.local\/restaurants"},"events":{"title":"Events","href":"http:\/\/yourdomain.local\/events"}}}
+
 
 Bullet Response Types
 --------------
@@ -273,74 +284,72 @@ additional customization.
 
 ### Strings
 
-```
-$app = new Bullet\App();
-$app->path('/', function($request) use($app) {
-    return "Hello World";
-});
-$app->path('/', function($request) use($app) {
-    return $app->response("Hello Error!", 500);
-});
-```
+
+    $app = new Bullet\App();
+    $app->path('/', function($request) use($app) {
+        return "Hello World";
+    });
+    $app->path('/', function($request) use($app) {
+        return $app->response("Hello Error!", 500);
+    });
+
 Strings result in a 200 OK response with a body containing the returned
 string. If you want to return a quick string response with a different
 HTTP status code, use the `$app->response()` helper.
 
 ### Booleans
 
-```
-$app = new Bullet\App();
-$app->path('/', function($request) use($app) {
-    return true;
-});
-$app->path('notfound', function($request) use($app) {
-    return false;
-});
-```
+
+    $app = new Bullet\App();
+    $app->path('/', function($request) use($app) {
+        return true;
+    });
+    $app->path('notfound', function($request) use($app) {
+        return false;
+    });
+
 Boolean `false` results in a 404 "Not Found" HTTP response, and boolean
 `true` results in a 200 "OK" HTTP response.
 
 ### Integers
 
-```
-$app = new Bullet\App();
-$app->path('teapot', function($request) use($app) {
-    return 418;
-});
-```
+
+    $app = new Bullet\App();
+    $app->path('teapot', function($request) use($app) {
+        return 418;
+    });
+
 Integers are mapped to their corresponding HTTP status code. In this
 example, a 418 "I'm a Teapot" HTTP response would be sent.
 
 ### Arrays
 
-```
-$app = new Bullet\App();
-$app->path('foo', function($request) use($app) {
-    return array('foo' => 'bar');
-});
-$app->path('bar', function($request) use($app) {
-    return $app->response(array('bar' => 'baz'), 201);
-});
-```
+    $app = new Bullet\App();
+    $app->path('foo', function($request) use($app) {
+        return array('foo' => 'bar');
+    });
+    $app->path('bar', function($request) use($app) {
+        return $app->response(array('bar' => 'baz'), 201);
+    });
+
 Arrays are automatically passed through `json_encode` and the appropriate
 `Content-Type: application/json` HTTP response header is sent.
 
 ### Templates
 
-```
-// Configure template path with constructor
-$app = new Bullet\App(array(
-    'template.cfg' => array('path' => __DIR__ . '/templates')
-));
+    // Configure template path with constructor
+    $app = new Bullet\App(array(
+        'template.cfg' => array('path' => __DIR__ . '/templates')
+    ));
 
-// Routes
-$app->path('foo', function($request) use($app) {
-    return $app->template('foo');
-});
-$app->path('bar', function($request) use($app) {
-    return $app->template('bar', array('bar' => 'baz'), 201);
-});
-```
+    // Routes
+    $app->path('foo', function($request) use($app) {
+        return $app->template('foo');
+    });
+    $app->path('bar', function($request) use($app) {
+        return $app->template('bar', array('bar' => 'baz'), 201);
+    });
+
 The `$app->template()` helper returns an instance of
 `Bullet\View\Template` that is lazy-rendered on `__toString` when the
 HTTP response is sent. The first argument is a template name, and the
@@ -358,17 +367,16 @@ return a raw string or other data type, they are wrapped in a response
 object by the `run` method), and they can be composed to form a single
 HTTP response.
 
-```
-$app = new Bullet\App();
-$app->path('foo', function($request) use($app) {
-    return "foo";
-});
-$app->path('bar', function($request) use($app) {
-    $foo = $app->run('GET', 'foo'); // $foo is now a `Bullet\Response` instance
-    return $foo->content() . "bar";
-});
-echo $app->run('GET', 'bar'); // echos 'foobar' with a 200 OK status
-```
+    $app = new Bullet\App();
+    $app->path('foo', function($request) use($app) {
+        return "foo";
+    });
+    $app->path('bar', function($request) use($app) {
+        $foo = $app->run('GET', 'foo'); // $foo is now a `Bullet\Response` instance
+        return $foo->content() . "bar";
+    });
+    echo $app->run('GET', 'bar'); // echos 'foobar' with a 200 OK status
+
 
 
 Running Tests

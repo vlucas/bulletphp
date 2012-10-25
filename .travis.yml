@@ -6,5 +6,8 @@ php:
   - 5.3
   - 5.4
 
+before_script:
+  - composer install
+
 # Script to run tests
 script: phpunit

@@ -16,6 +16,7 @@ class App extends \Pimple
       'exception' => array(),
       'custom' => array()
     );
+    protected $_helpers = array();
 
     /**
      * New App instance
@@ -383,6 +384,32 @@ class App extends \Pimple
     }
 
     /**
+     * Load and return or register helper class
+     *
+     * @param string $name helper name to register
+     * @param string $class Class name of helper to load
+     */
+    public function helper($name, $class = null)
+    {
+        if($class !== null) {
+            $this->_helpers[$name] = $class;
+            return;
+        }
+
+        // Ensure helper exists
+        if(!isset($this->_helpers[$name])) {
+            throw new \InvalidArgumentException("Requested helper '" . $name ."' not registered.");
+        }
+
+        // Instantiate helper if not done already
+        if(!is_object($this->_helpers[$name])) {
+            $this->_helpers[$name] = new $this->_helpers[$name];
+        }
+
+        return $this->_helpers[$name];
+    }
+
+    /**
      * Add a custom exception handler to handle any exceptions and return an HTTP response
      *
      * @param callback $callback Callback or closure that will be executed when missing method call matching $method is made
@@ -471,7 +498,7 @@ class App extends \Pimple
     }
 
     /**
-     * Prevent PHP from trying to serialize cached object instances on Kernel
+     * Prevent PHP from trying to serialize cached object instances
      */
     public function __sleep()
     {

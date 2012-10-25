@@ -595,4 +595,29 @@ class AppTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals(400, $response->status());
         $this->assertEquals('Bad Request custom exception handler', $response->content());
     }
+
+    public function testHelperLoading()
+    {
+        $app = new Bullet\App();
+        $app->helper('test', __NAMESPACE__ . '\TestHelper');
+        $testHelper = $app->helper('test');
+
+        $this->assertEquals('something', $testHelper->something());
+    }
+
+    public function testHelperThrowsExceptionForUnregisteredHelpers()
+    {
+        $app = new Bullet\App();
+        $this->setExpectedException('InvalidArgumentException');
+        $testHelper = $app->helper('nonexistent');
+    }
 }
+
+class TestHelper
+{
+    public function something()
+    {
+        return "something";
+    }
+}
+

@@ -7,6 +7,9 @@ each path part independently and one at a time using nested closures. The
 path part callbacks are nested to produce different responses and to follow
 and execute deeper paths as paths and parameters are matched.
 
+[![Build
+Status](https://secure.travis-ci.org/vlucas/bulletphp.png)](http://travis-ci.org/vlucas/bulletphp)
+
 Requirements
 ------------
 

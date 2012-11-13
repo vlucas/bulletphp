@@ -354,6 +354,33 @@ class AppTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals('update_546', $response->content());
     }
 
+    public function testHandlersCanReturnIntergerAsHttpStatus()
+    {
+        $app = new Bullet\App();
+        $app->path('testint', function() use($app) {
+            return 200;
+        });
+
+        $response = $app->run('GET', 'testint');
+        $this->assertEquals(200, $response->status());
+        $this->assertEquals("OK", $response->content());
+    }
+
+    public function testHandlersCanReturnIntergerAsHttpStatusInMethodCallback()
+    {
+        $app = new Bullet\App();
+        $app->path('testint2', function() use($app) {
+            // GET
+            $app->get(function($request) use($app) {
+                return 429;
+            });
+        });
+
+        $response = $app->run('GET', 'testint2');
+        $this->assertEquals(429, $response->status());
+        $this->assertEquals("Too Many Requests", $response->content());
+    }
+
     public function testPathExecutionIgnoresExtension()
     {
         $app = new Bullet\App();

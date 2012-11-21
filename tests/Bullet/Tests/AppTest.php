@@ -1,6 +1,8 @@
 <?php
 namespace Bullet\Tests;
 use Bullet;
+use Bullet\Request;
+use Bullet\Response;
 
 class AppTest extends \PHPUnit_Framework_TestCase
 {
@@ -393,12 +395,32 @@ class AppTest extends \PHPUnit_Framework_TestCase
 
         // Register custom handler
         $app->on(500, function($request, $response) {
-            return $response->status(200)->content("Intercepted 500 Error");
+            $response->status(200)->content("Intercepted 500 Error");
         });
 
         $response = $app->run('GET', 'testhandler');
-        $this->assertEquals(300, $response->status());
+        $this->assertEquals(200, $response->status());
         $this->assertEquals("Intercepted 500 Error", $response->content());
+    }
+
+    public function testCustomHttpStatusHandlerKeepingContent()
+    {
+        $app = new Bullet\App();
+        $app->path('testhandler', function() use($app) {
+            // GET
+            $app->get(function($request) use($app) {
+                return $app->response(500, "Oh Snap!");
+            });
+        });
+
+        // Register custom handler
+        $app->on(500, function($request, $response) {
+            $response->status(204);
+        });
+
+        $response = $app->run('GET', 'testhandler');
+        $this->assertEquals(204, $response->status());
+        $this->assertEquals("Oh Snap!", $response->content());
     }
 
     public function testPathExecutionIgnoresExtension()
@@ -613,11 +635,12 @@ class AppTest extends \PHPUnit_Framework_TestCase
     public function testExceptionsAreCaughtWhenCustomHandlerIsRegistered()
     {
         $app = new Bullet\App();
-        $app->exceptionHandler(function($e) {
+        $app->on('Exception', function(Request $request, Response $response, \Exception $e) {
             if($e instanceof \Exception) {
-                return "yep";
+                $response->content('yep');
+            } else {
+                $response->content('nope');
             }
-            return "nope";
         });
         $app->path('test', function($request) use($app) {
             throw new \Exception("This is a specific error message here!");
@@ -631,16 +654,16 @@ class AppTest extends \PHPUnit_Framework_TestCase
     public function testExceptionHandlerAllowsStatusOtherThan500()
     {
         $app = new Bullet\App();
-        $app->exceptionHandler(function($e) use($app) {
-            return $app->response(400, 'Bad Request custom exception handler');
+        $app->on('InvalidArgumentException', function(Request $request, Response $response, \Exception $e) {
+            $response->status(200)->content('There is a pankake on my head. Your argument is invalid.');
         });
         $app->path('test', function($request) use($app) {
-            throw new \Exception("This is a specific error message here!");
+            throw new \InvalidArgumentException("This is a specific error message here!");
         });
 
         $response = $app->run('POST', 'test');
-        $this->assertEquals(400, $response->status());
-        $this->assertEquals('Bad Request custom exception handler', $response->content());
+        $this->assertEquals(200, $response->status());
+        $this->assertEquals('There is a pankake on my head. Your argument is invalid.', $response->content());
     }
 
     public function testHelperLoading()

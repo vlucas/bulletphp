@@ -135,7 +135,15 @@ class App extends \Pimple
             try {
                 $response = $this->_runPath($this->_requestMethod, $path);
             } catch(\Exception $e) {
-                $response = $this->response(500, $this->handleException($e));
+                // Always trigger base 'Exception', plus actual exception class
+                $events = array_unique(array('Exception', get_class($e)));
+
+                // Default status is 500 and content is Exception object
+                $this->response()->status(500)->content($e);
+
+                // Run filters and assign response
+                $this->filter($events, array($e));
+                $response = $this->response();
             }
         }
 
@@ -162,9 +170,8 @@ class App extends \Pimple
         // Set current outgoing response
         $this->response($response);
 
-        // Trigger events based on HTTP response
-        // @TODO Seems like the job for middleware?
-        $response = $this->filter($response->status());
+        // Trigger events based on HTTP request format and HTTP response code
+        $this->filter(array($this->_request->format(), $response->status()));
 
         return $response;
     }
@@ -182,6 +189,8 @@ class App extends \Pimple
      */
     public function response($statusCode = null, $content = null)
     {
+        $res = null;
+
         // Get current response (passed nothing)
         if($statusCode === null) {
             $res = $this->_response;
@@ -189,9 +198,10 @@ class App extends \Pimple
         // Set response
         } elseif($statusCode instanceof \Bullet\Response) {
             $res = $this->_response = $statusCode;
+        }
 
-        // Create new response
-        } else {
+        // Create new response if none is going to be returned
+        if($res === null) {
             $res = new \Bullet\Response($content, $statusCode);
 
             // If content not set, use default HTTP
@@ -199,6 +209,12 @@ class App extends \Pimple
                 $res->content($res->statusText($statusCode));
             }
         }
+
+        // If this is the first response sent, store it
+        if($this->_response === null) {
+            $this->_response = $res;
+        }
+
         return $res;
     }
 
@@ -445,10 +461,7 @@ class App extends \Pimple
 
         // Allow for an array of events to be passed in
         foreach((array) $event as $eventName) {
-            // Event is class name if class is passed
-            if(is_object($eventName)) {
-                $eventName = get_class($eventName);
-            }
+            $eventName = $this->eventName($eventName);
             $this->_callbacks['events'][$eventName][] = $callback;
         }
     }
@@ -463,10 +476,7 @@ class App extends \Pimple
     {
         // Allow for an array of events to be passed in
         foreach((array) $event as $eventName) {
-            // Event is class name if class is passed
-            if(is_object($eventName)) {
-                $eventName = get_class($eventName);
-            }
+            $eventName = $this->eventName($eventName);
             if(isset($this->_callbacks['events'][$eventName])) {
                 unset($this->_callbacks['events'][$eventName]);
                 return true;
@@ -476,29 +486,44 @@ class App extends \Pimple
     }
 
     /**
-     * Trigger event
+     * Trigger event by running all filters for it
      *
-     * @param string $event Name of the event to be handled
+     * @param string|array $event Name of the event or array of events to be triggered
+     * @param array $args Extra arguments to pass to filters listening for event
      * @return boolean Boolean true on successful event trigger, false on failure or non-existent event
      */
-    public function trigger($eventName)
+    public function filter($event, array $args = array())
     {
         $request = $this->request();
         $response = $this->response();
 
-        if(!is_string($eventName)) {
-            throw new \InvalidArgumentException("Event name is expected to be a string. Got: " . gettype($eventName));	
-        }
-        if(isset($this->_callbacks['events'][$eventName])) {
-            foreach($this->_callbacks['events'][$eventName] as $handler) {
-                $res = call_user_func($handler, $request, $response);
-                // Use returned value as new Response
-                if($res !== null) {
-                    $response = $res;
+        // Allow for an array of events to be passed in
+        foreach((array) $event as $eventName) {
+            $eventName = $this->eventName($eventName);
+            if(isset($this->_callbacks['events'][$eventName])) {
+                foreach($this->_callbacks['events'][$eventName] as $handler) {
+                    call_user_func_array($handler, array_merge(array($request, $response), $args));
                 }
             }
-            return $response;
         }
+    }
+
+    /**
+     * Normalize event name
+     *
+     * @param mixed $event Name of the event to be handled
+     * @return string Normalized name of the event
+     */
+    public function eventName($eventName)
+    {
+        // Event is class name if class is passed
+        if(is_object($eventName)) {
+            $eventName = get_class($eventName);
+        }
+        if(!is_scalar($eventName)) {
+            throw new \InvalidArgumentException("Event name is expected to be a scalar value (integer, float, string, or boolean). Got: " . gettype($eventName));	
+        }
+        return (string) $eventName;
     }
 
     /**

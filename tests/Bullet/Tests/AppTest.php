@@ -209,7 +209,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
                 // GET
                 $app->get(function($request) use($app) {
                     // Should be returned
-                    return $app->response("Teapot", 418);
+                    return $app->response(418, "Teapot");
                 });
 
                 // Should not be returned
@@ -381,6 +381,26 @@ class AppTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals("Too Many Requests", $response->content());
     }
 
+    public function testCustomHttpStatusHandler()
+    {
+        $app = new Bullet\App();
+        $app->path('testhandler', function() use($app) {
+            // GET
+            $app->get(function($request) use($app) {
+                return 500;
+            });
+        });
+
+        // Register custom handler
+        $app->on(500, function($request, $response) {
+            return $response->status(200)->content("Intercepted 500 Error");
+        });
+
+        $response = $app->run('GET', 'testhandler');
+        $this->assertEquals(300, $response->status());
+        $this->assertEquals("Intercepted 500 Error", $response->content());
+    }
+
     public function testPathExecutionIgnoresExtension()
     {
         $app = new Bullet\App();
@@ -447,7 +467,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
             });
             $app->post(function($request) use($app) {
                 $app->format('json', function() use($app) {
-                    return $app->response(array('created' => 'something'), 201);
+                    return $app->response(201, array('created' => 'something'));
                 });
             });
         });
@@ -567,7 +587,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
         $app = new Bullet\App();
         $app->path('posts', function($request) use($app) {
             $app->post(function() use($app) {
-                return $app->response('Created something!', 201);
+                return $app->response(201, 'Created something!');
             });
         });
 
@@ -581,7 +601,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
         $app->path('posts', function($request) use($app) {
             $app->post(function() use($app) {
                 $app->format('json', function() use($app) {
-                    return $app->response(array('created' => 'something'), 201);
+                    return $app->response(201, array('created' => 'something'));
                 });
             });
         });
@@ -612,7 +632,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
     {
         $app = new Bullet\App();
         $app->exceptionHandler(function($e) use($app) {
-            return $app->response('Bad Request custom exception handler', 400);
+            return $app->response(400, 'Bad Request custom exception handler');
         });
         $app->path('test', function($request) use($app) {
             throw new \Exception("This is a specific error message here!");

@@ -3,6 +3,9 @@ namespace Bullet;
 
 class App extends \Pimple
 {
+    protected $_request;
+    protected $_response;
+
     protected $_paths = array();
     protected $_requestMethod;
     protected $_requestPath;
@@ -132,29 +135,36 @@ class App extends \Pimple
             try {
                 $response = $this->_runPath($this->_requestMethod, $path);
             } catch(\Exception $e) {
-                $response = $this->response($this->handleException($e), 500);
+                $response = $this->response(500, $this->handleException($e));
             }
         }
 
         // Ensure response is always a Bullet\Response
         if($response === false) {
             // Boolean false result generates a 404
-            $response = $this->response(null, 404);
+            $response = $this->response(404);
         } elseif(is_int($response)) {
             // Assume int response is desired HTTP status code
-            $response = $this->response(null, $response);
+            $response = $this->response($response);
         } else {
             // Convert response to Bullet\Response object if not one already
             if(!($response instanceof \Bullet\Response)) {
-                $response = $this->response($response);
+                $response = $this->response(200, $response);
             }
         }
 
         // JSON headers and response if content is an array
         if(is_array($response->content())) {
-          $response->header('Content-Type', 'application/json');
-          $response->content(json_encode($response->content()));
+            $response->header('Content-Type', 'application/json');
+            $response->content(json_encode($response->content()));
         }
+
+        // Set current outgoing response
+        $this->response($response);
+
+        // Trigger events based on HTTP response
+        // @TODO Seems like the job for middleware?
+        $response = $this->filter($response->status());
 
         return $response;
     }
@@ -170,13 +180,24 @@ class App extends \Pimple
     /**
      * Send HTTP response with status code and content
      */
-    public function response($content = null, $statusCode = 200)
+    public function response($statusCode = null, $content = null)
     {
-        $res = new \Bullet\Response($content, $statusCode);
+        // Get current response (passed nothing)
+        if($statusCode === null) {
+            $res = $this->_response;
 
-        // If content not set, use default HTTP
-        if($content === null) {
-            $res->content($res->statusText($statusCode));
+        // Set response
+        } elseif($statusCode instanceof \Bullet\Response) {
+            $res = $this->_response = $statusCode;
+
+        // Create new response
+        } else {
+            $res = new \Bullet\Response($content, $statusCode);
+
+            // If content not set, use default HTTP
+            if($content === null) {
+                $res->content($res->statusText($statusCode));
+            }
         }
         return $res;
     }
@@ -230,7 +251,7 @@ class App extends \Pimple
                 $cb = $this->_callbacks['method'][$method];
                 $res = call_user_func($cb, $this->request());
             } else {
-                $res = $this->response(null, 405);
+                $res = $this->response(405);
             }
         } else {
             // Empty out collected method callbacks
@@ -246,7 +267,7 @@ class App extends \Pimple
                 $cb = $this->_callbacks['format'][$format];
                 $res = call_user_func($cb, $this->request());
             } else {
-                $res = $this->response(null, 406);
+                $res = $this->response(406);
             }
         } else {
             // Empty out collected method callbacks
@@ -257,7 +278,7 @@ class App extends \Pimple
     }
 
     /**
-     * Get current request object (do nothing for now)
+     * Get current request object
      */
     public function request()
     {
@@ -410,17 +431,74 @@ class App extends \Pimple
     }
 
     /**
-     * Add a custom exception handler to handle any exceptions and return an HTTP response
+     * Add event handler for named event
      *
-     * @param callback $callback Callback or closure that will be executed when missing method call matching $method is made
+     * @param mixed $event Name of the event to be handled
+     * @param callback $callback Callback or closure that will be executed when event is triggered
      * @throws InvalidArgumentException
      */
-    public function exceptionHandler($callback)
+    public function on($event, $callback)
     {
         if(!is_callable($callback)) {
-            throw new \InvalidArgumentException("First argument is expected to be a valid callback or closure. Got: " . gettype($callback));	
+            throw new \InvalidArgumentException("Second argument is expected to be a valid callback or closure. Got: " . gettype($callback));	
         }
-        $this->_callbacks['exception'][] = $callback;
+
+        // Allow for an array of events to be passed in
+        foreach((array) $event as $eventName) {
+            // Event is class name if class is passed
+            if(is_object($eventName)) {
+                $eventName = get_class($eventName);
+            }
+            $this->_callbacks['events'][$eventName][] = $callback;
+        }
+    }
+
+    /**
+     * Remove event handlers for given event name
+     *
+     * @param mixed $event Name of the event to be handled
+     * @return boolean Boolean true on successful event handler removal, false on failure or non-existent event
+     */
+    public function off($event)
+    {
+        // Allow for an array of events to be passed in
+        foreach((array) $event as $eventName) {
+            // Event is class name if class is passed
+            if(is_object($eventName)) {
+                $eventName = get_class($eventName);
+            }
+            if(isset($this->_callbacks['events'][$eventName])) {
+                unset($this->_callbacks['events'][$eventName]);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Trigger event
+     *
+     * @param string $event Name of the event to be handled
+     * @return boolean Boolean true on successful event trigger, false on failure or non-existent event
+     */
+    public function trigger($eventName)
+    {
+        $request = $this->request();
+        $response = $this->response();
+
+        if(!is_string($eventName)) {
+            throw new \InvalidArgumentException("Event name is expected to be a string. Got: " . gettype($eventName));	
+        }
+        if(isset($this->_callbacks['events'][$eventName])) {
+            foreach($this->_callbacks['events'][$eventName] as $handler) {
+                $res = call_user_func($handler, $request, $response);
+                // Use returned value as new Response
+                if($res !== null) {
+                    $response = $res;
+                }
+            }
+            return $response;
+        }
     }
 
     /**

@@ -521,7 +521,7 @@ class App extends \Pimple
             $eventName = get_class($eventName);
         }
         if(!is_scalar($eventName)) {
-            throw new \InvalidArgumentException("Event name is expected to be a scalar value (integer, float, string, or boolean). Got: " . gettype($eventName));	
+            throw new \InvalidArgumentException("Event name is expected to be a scalar value (integer, float, string, or boolean). Got: " . gettype($eventName) . " (" . var_export($eventName, true) . ")");	
         }
         return (string) $eventName;
     }

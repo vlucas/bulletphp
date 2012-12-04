@@ -666,6 +666,42 @@ class AppTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals('There is a pankake on my head. Your argument is invalid.', $response->content());
     }
 
+    public function testEventHandlerBefore()
+    {
+        $app = new Bullet\App();
+        $app->path('testhandler', function() use($app) {
+            $app->post(function($request) use($app) {
+                return $request->foo;
+            });
+        });
+
+        // Register custom handler
+        $app->on('before', function($request, $response) {
+            $request->foo = 'bar';
+        });
+
+        $response = $app->run('POST', 'testhandler');
+        $this->assertEquals('bar', $response->content());
+    }
+
+    public function testEventHandlerAfter()
+    {
+        $app = new Bullet\App();
+        $app->path('testhandler', function() use($app) {
+            $app->put(function($request) use($app) {
+                return 'test';
+            });
+        });
+
+        // Register custom handler
+        $app->on('after', function($request, $response) {
+            $response->content($response->content() . 'AFTER');
+        });
+
+        $response = $app->run('PUT', 'testhandler');
+        $this->assertEquals('testAFTER', $response->content());
+    }
+
     public function testHelperLoading()
     {
         $app = new Bullet\App();

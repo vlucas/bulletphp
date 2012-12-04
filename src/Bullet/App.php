@@ -126,6 +126,9 @@ class App extends \Pimple
         // Normalize request path
         $this->_requestPath = trim($this->_requestPath, '/');
 
+        // Run before filter
+        $this->filter('before');
+
         // Explode by path without leading or trailing slashes
         $paths = explode('/', $this->_requestPath);
         foreach($paths as $pos => $path) {
@@ -171,7 +174,7 @@ class App extends \Pimple
         $this->response($response);
 
         // Trigger events based on HTTP request format and HTTP response code
-        $this->filter(array($this->_request->format(), $response->status()));
+        $this->filter(array($this->_request->format(), $response->status(), 'after'));
 
         return $response;
     }

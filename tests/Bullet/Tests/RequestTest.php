@@ -68,4 +68,29 @@ class RequestTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals('{"foo":"bar"}', $res->content());
         $this->assertEquals('application/json', $res->contentType());
     }
+
+    function testRawUrlencodedBodyIsDecodedInPutRequest()
+    {
+        $r = new Bullet\Request('PUT', '/users/123.json', array(), array('Accept' => 'application/json'), 'id=123&foo=bar&bar=bar+baz');
+        $this->assertEquals('123', $r->id);
+        $this->assertEquals('bar baz', $r->bar);
+    }
+
+    function testRawJsonBodyIsDecodedInPutRequest()
+    {
+        $r = new Bullet\Request('PUT', '/users/42.json', array(), array('Accept' => 'application/json'), '{"id":"123"}');
+        $this->assertEquals('123', $r->id);
+    }
+
+    function testRawJsonBodyIsDecodedInPostRequest()
+    {
+        $r = new Bullet\Request('POST', '/users/129.json', array(), array('Accept' => 'application/json'), '{"id":"124"}');
+        $this->assertEquals('124', $r->id);
+    }
+
+    function testRawJsonBodyIsIgnoredInPostRequestIfPostParamsAreSet()
+    {
+        $r = new Bullet\Request('POST', '/users/129.json', array('id' => '123'), array('Accept' => 'application/json'), '{"id":"124"}');
+        $this->assertEquals('123', $r->id);
+    }
 }

@@ -21,6 +21,10 @@ class Request
     protected $_params = array();
     protected $_accept;
 
+    // Other
+    protected $_raw;
+
+    // Mimetypes
     protected $_mimeTypes = array(
         'txt' => 'text/plain',
         'html' => 'text/html',
@@ -60,7 +64,7 @@ class Request
      * @param array  Request parameters
      * @param array  HTTP Headers
      */
-    public function __construct($method = null, $url = null, array $params = array(), array $headers = array())
+    public function __construct($method = null, $url = null, array $params = array(), array $headers = array(), $rawBody = null)
     {
         // Die magic_quotes, just die...
         if(get_magic_quotes_gpc()) {
@@ -94,6 +98,11 @@ class Request
             $this->_headers = $_SERVER;
         }
 
+        // Set raw request body
+        if($rawBody !== null) {
+            $this->_raw = $rawBody;
+        }
+
         // Parse 'Accept' header to see what format is requested
         $accept = $this->accept();
         if(!empty($accept)) {
@@ -102,10 +111,26 @@ class Request
             $this->format($firstType);
         }
 
-        // Properly handle PUT and DELETE request params
-        if($this->isPut() || $this->isDelete()) {
-            parse_str(file_get_contents('php://input'), $params);
-            $this->params($params);
+        // Properly handle PUT and POST requests with no params
+        if($this->isPut() || $this->isDelete() || ($this->isPost() && empty($_POST))) {
+            // Get and parse raw request body
+            $raw = $this->raw();
+            parse_str($raw, $params);
+
+            // Check to ensure raw body was decoded correctly. If it wasn't, the whole raw string will be a key in the
+            // resulting array instead of something sensible, like... I dunno... boolean false, maybe? (f#*@&! php)
+            if(isset($params[$raw])) {
+                $params = array();
+                $json = json_decode($raw, true, 512, JSON_BIGINT_AS_STRING);
+                if($json) {
+                    $params = $json;
+                }
+            }
+
+            // Set params if any decoding was successful
+            if($params) {
+                $this->setParams($params);
+            }
         }
     }
 
@@ -599,6 +624,19 @@ class Request
             }
         }
         return ($ip ? $ip : $_SERVER['REMOTE_ADDR']);
+    }
+
+
+    /**
+     * Get raw, unparsed request body (useful for PUT and POST requests with encoded body - like JSON)
+     * Exists because PHP cannot retrieve the contents of php://input more than once
+     */
+    public function raw()
+    {
+        if(null === $this->_raw) {
+            $this->_raw = file_get_contents('php://input');
+        }
+        return $this->_raw;
     }
 
 

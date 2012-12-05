@@ -121,7 +121,7 @@ class Request
             // resulting array instead of something sensible, like... I dunno... boolean false, maybe? (f#*@&! php)
             if(isset($params[$raw])) {
                 $params = array();
-                $json = json_decode($raw, true, 512, JSON_BIGINT_AS_STRING);
+                $json = json_decode($raw, true);
                 if($json) {
                     $params = $json;
                 }

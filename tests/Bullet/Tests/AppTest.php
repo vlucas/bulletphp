@@ -717,6 +717,24 @@ class AppTest extends \PHPUnit_Framework_TestCase
         $this->setExpectedException('InvalidArgumentException');
         $testHelper = $app->helper('nonexistent');
     }
+
+    public function testSupportsPatch()
+    {
+        $app = new Bullet\App();
+        $app->path('update', function($request) use($app) {
+            $app->patch(function($request) {
+                return $request->params();
+            });
+        });
+
+        $params = array('foo' => 'bar', 'bar' => 'baz');
+        $request = new \Bullet\Request('PATCH', '/update', $params);
+        $result = $app->run($request);
+
+        $this->assertEquals('PATCH', $request->method());
+        $this->assertEquals(json_encode($params), $result->content());
+    }
+
 }
 
 class TestHelper

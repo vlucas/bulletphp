@@ -10,6 +10,12 @@ class RequestTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals('POST', $r->method());
     }
 
+    function testMethodSupportsPatch()
+    {
+        $r = new Bullet\Request('PATCH', '/foo/bar');
+        $this->assertEquals('PATCH', $r->method());
+    }
+
     function testUrl()
     {
         $r = new Bullet\Request('DELETE', '/foo/bar/');

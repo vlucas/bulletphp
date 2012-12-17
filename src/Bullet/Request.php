@@ -13,6 +13,7 @@ namespace Bullet;
 class Request
 {
     // Request URL
+    protected $_method;
     protected $_url;
     protected $_format = 'html';
 
@@ -111,8 +112,8 @@ class Request
             $this->format($firstType);
         }
 
-        // Properly handle PUT and POST requests with no params
-        if($this->isPut() || $this->isDelete() || ($this->isPost() && empty($_POST))) {
+        // Properly handle PATCH, PUT, and DELETE requests, and POST requests with no params but post bodies
+        if($this->isPatch() || $this->isPut() || $this->isDelete() || ($this->isPost() && empty($_POST) && empty($this->_params))) {
             // Get and parse raw request body
             $raw = $this->raw();
             parse_str($raw, $params);
@@ -681,6 +682,17 @@ class Request
     public function isDelete()
     {
         return ($this->method() == "DELETE");
+    }
+
+
+    /**
+     *	Determine is incoming request is PATCH
+     *
+     *	@return boolean
+     */
+    public function isPatch()
+    {
+        return ($this->method() == "PATCH");
     }
 
 

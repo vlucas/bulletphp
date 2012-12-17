@@ -345,6 +345,14 @@ class App extends \Pimple
     }
 
     /**
+     * Handle PATCH method
+     */
+    public function patch(\Closure $callback)
+    {
+        return $this->method('PATCH', $callback);
+    }
+
+    /**
      * Handle HTTP method
      *
      * @param string $method HTTP method to handle for

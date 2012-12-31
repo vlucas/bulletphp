@@ -99,4 +99,16 @@ class RequestTest extends \PHPUnit_Framework_TestCase
         $r = new Bullet\Request('POST', '/users/129.json', array('id' => '123'), array('Accept' => 'application/json'), '{"id":"124"}');
         $this->assertEquals('123', $r->id);
     }
+
+    function testSubdomainCapture()
+    {
+        $r = new Bullet\Request('GET', '/', array(), array('Host' => 'test.bulletphp.com'));
+        $this->assertEquals('test', $r->subdomain());
+    }
+
+    function testSubdomainCaptureWithNoSubdomain()
+    {
+        $r = new Bullet\Request('GET', '/', array(), array('Host' => 'bulletphp.com'));
+        $this->assertFalse($r->subdomain());
+    }
 }

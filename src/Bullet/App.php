@@ -10,13 +10,13 @@ class App extends \Pimple
     protected $_requestMethod;
     protected $_requestPath;
     protected $_curentPath;
+    protected $_paramTypes = array();
     protected $_callbacks = array(
       'path' => array(),
       'param' => array(),
-      'param_type' => array(),
       'method' => array(),
+      'subdomain' => array(),
       'format' => array(),
-      'exception' => array(),
       'custom' => array()
     );
     protected $_helpers = array();
@@ -54,6 +54,24 @@ class App extends \Pimple
         if(isset($this['template.cfg'])) {
             View\Template::config($this['template.cfg']);
         }
+
+        // Get callback stacks ready
+        $this->resetCallbacks();
+    }
+
+    /**
+     * Reset/clear all callbacks to their initial state
+     */
+    public function resetCallbacks()
+    {
+        $this->_callbacks = array(
+            'path' => array(),
+            'param' => array(),
+            'method' => array(),
+            'subdomain' => array(),
+            'format' => array(),
+            'custom' => array()
+        );
     }
 
     public function path($path, \Closure $callback)
@@ -76,7 +94,7 @@ class App extends \Pimple
         if(!is_callable($callback)) {
             throw new \InvalidArgumentException("Second argument must be a valid callback. Given argument was not callable.");
         }
-        $this->_callbacks['param_type'][$type] = $callback;
+        $this->_paramTypes[$type] = $callback;
         return $this;
     }
 
@@ -226,27 +244,37 @@ class App extends \Pimple
      */
     protected function _runPath($method, $path, \Closure $callback = null)
     {
+        $request = $this->request();
+
         // Use $callback param if set (always overrides)
         if($callback !== null) {
-            $res = call_user_func($callback, $this->request());
+            $res = call_user_func($callback, $request);
             return $res;
         }
 
         // Default response is boolean false (produces 404 Not Found)
         $res = false;
 
+        // Run 'subdomain' callbacks
+        $subdomain = strtolower($request->subdomain());
+        if(isset($this->_callbacks['subdomain'][$subdomain])) {
+            $cb = $this->_callbacks['subdomain'][$subdomain];
+            $this->resetCallbacks();
+            $res = call_user_func($cb, $request);
+        }
+
         // Run 'path' callbacks
         if(isset($this->_callbacks['path'][$path])) {
             $cb = $this->_callbacks['path'][$path];
-            $res = call_user_func($cb, $this->request());
+            $res = call_user_func($cb, $request);
         }
 
         // Run 'param' callbacks
         if(count($this->_callbacks['param']) > 0) {
             foreach($this->_callbacks['param'] as $filter => $cb) {
                 // Use matching registered filter type callback if given a non-callable string
-                if(is_string($filter) && !is_callable($filter) && isset($this->_callbacks['param_type'][$filter])) {
-                    $filter = $this->_callbacks['param_type'][$filter];
+                if(is_string($filter) && !is_callable($filter) && isset($this->_paramTypes[$filter])) {
+                    $filter = $this->_paramTypes[$filter];
                 }
                 $param = call_user_func($filter, $path);
 
@@ -257,7 +285,7 @@ class App extends \Pimple
                     // Pass callback test function return value if not boolean
                     $path = $param;
                 }
-                $res = call_user_func($cb, $this->request(), $path);
+                $res = call_user_func($cb, $request, $path);
                 break;
             }
         }
@@ -268,7 +296,7 @@ class App extends \Pimple
             // If NO method callbacks are present, path return value will be used, or 404
             if(isset($this->_callbacks['method'][$method])) {
                 $cb = $this->_callbacks['method'][$method];
-                $res = call_user_func($cb, $this->request());
+                $res = call_user_func($cb, $request);
             } else {
                 $res = $this->response(405);
             }
@@ -284,7 +312,7 @@ class App extends \Pimple
             // If NO method callbacks are present, path return value will be used, or 404
             if(isset($this->_callbacks['format'][$format])) {
                 $cb = $this->_callbacks['format'][$format];
-                $res = call_user_func($cb, $this->request());
+                $res = call_user_func($cb, $request);
             } else {
                 $res = $this->response(406);
             }
@@ -361,6 +389,18 @@ class App extends \Pimple
     public function method($method, \Closure $callback)
     {
         $this->_callbacks['method'][strtoupper($method)] = $this->_prepClosure($callback);
+        return $this;
+    }
+
+    /**
+     * Handle specific subdomain
+     *
+     * @param string $subdomain Name of subdomain to use
+     * @param \Closure $callback Closure to execute to handle specified subdomain path
+     */
+    public function subdomain($subdomain, \Closure $callback)
+    {
+        $this->_callbacks['subdomain'][strtolower($subdomain)] = $this->_prepClosure($callback);
         return $this;
     }
 

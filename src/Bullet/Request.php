@@ -575,13 +575,26 @@ class Request
 
 
     /**
+     * Request subdomain
+     *
+     * @return String request subdomain
+     */
+    public function subdomain()
+    {
+        $parts = explode('.', $this->host());
+        $count = count($parts);
+        return ($count > 2 ? $parts[0] : false);
+    }
+
+
+    /**
      * Request HTTP_HOST
      *
      * @return String request host from $_SERVER superglobal
      */
     public function host()
     {
-        return $this->server('HTTP_HOST');
+        return $this->header('Host');
     }
 
 

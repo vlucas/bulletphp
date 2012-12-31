@@ -796,6 +796,42 @@ class AppTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals(200, $result->status());
         $this->assertEquals("GET main path", $result->content());
     }
+
+    public function testSubdomainRouteArray()
+    {
+        $app = new Bullet\App();
+        $app->subdomain(array('www', false), function($request) use($app) {
+            $app->path('/', function($request) use($app) {
+                $app->get(function($request) {
+                    return "GET www";
+                });
+            });
+        });
+
+        $request = new \Bullet\Request('GET', '/', array(), array('Host' => 'www.bulletphp.com'));
+        $result = $app->run($request);
+
+        $this->assertEquals(200, $result->status());
+        $this->assertEquals("GET www", $result->content());
+    }
+
+    public function testSubdomainFalseRouteWithNoSubdomain()
+    {
+        $app = new Bullet\App();
+        $app->subdomain(false, function($request) use($app) {
+            $app->path('/', function($request) use($app) {
+                $app->get(function($request) {
+                    return "GET www";
+                });
+            });
+        });
+
+        $request = new \Bullet\Request('GET', '/', array(), array('Host' => 'bulletphp.com'));
+        $result = $app->run($request);
+
+        $this->assertEquals(200, $result->status());
+        $this->assertEquals("GET www", $result->content());
+    }
 }
 
 class TestHelper

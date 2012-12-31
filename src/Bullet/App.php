@@ -383,36 +383,42 @@ class App extends \Pimple
     /**
      * Handle HTTP method
      *
-     * @param string $method HTTP method to handle for
+     * @param string|array $method HTTP method to handle for
      * @param \Closure $callback Closure to execute to handle specified HTTP method
      */
-    public function method($method, \Closure $callback)
+    public function method($methods, \Closure $callback)
     {
-        $this->_callbacks['method'][strtoupper($method)] = $this->_prepClosure($callback);
+        foreach((array) $methods as $method) {
+            $this->_callbacks['method'][strtoupper($method)] = $this->_prepClosure($callback);
+        }
         return $this;
     }
 
     /**
      * Handle specific subdomain
      *
-     * @param string $subdomain Name of subdomain to use
+     * @param string|array $subdomain Name of subdomain to use
      * @param \Closure $callback Closure to execute to handle specified subdomain path
      */
-    public function subdomain($subdomain, \Closure $callback)
+    public function subdomain($subdomains, \Closure $callback)
     {
-        $this->_callbacks['subdomain'][strtolower($subdomain)] = $this->_prepClosure($callback);
+        foreach((array) $subdomains as $subdomain) {
+            $this->_callbacks['subdomain'][strtolower($subdomain)] = $this->_prepClosure($callback);
+        }
         return $this;
     }
 
     /**
      * Handle HTTP content type as output format
      *
-     * @param string $format HTTP content type format to handle for
+     * @param string|array $format HTTP content type format to handle for
      * @param \Closure $callback Closure to execute to handle specified format
      */
-    public function format($format, \Closure $callback)
+    public function format($formats, \Closure $callback)
     {
-        $this->_callbacks['format'][strtolower($format)] = $this->_prepClosure($callback);
+        foreach((array) $formats as $format) {
+            $this->_callbacks['format'][strtolower($format)] = $this->_prepClosure($callback);
+        }
         return $this;
     }
 

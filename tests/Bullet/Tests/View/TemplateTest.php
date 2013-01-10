@@ -108,4 +108,12 @@ class TemplateTest extends \PHPUnit_Framework_TestCase
         $this->assertInstanceOf('Bullet\View\Template', $tpl);
         $this->assertEquals('<p>Test</p>', $tpl->content());
     }
+
+    public function testTemplateLayoutVariablePassing()
+    {
+        Template::config(array('path_layouts' => $this->templateDir . 'layouts/'));
+        $tpl = new Template('variable');
+        $tpl->layout('variable');
+        $this->assertEquals('bar', $tpl->content());
+    }
 }

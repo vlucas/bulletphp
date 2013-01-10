@@ -346,7 +346,13 @@ class Template extends Response
             if(isset(self::$_config['path_layouts'])) {
                 $layout->path(self::$_config['path_layouts']);
             }
+            // Pass all locally set variables to layout
+            $layout->set($this->_vars);
+
+            // Set main yield content block
             $layout->set('yield', $templateContent);
+
+            // Get content
             $templateContent = $layout->content($parsePHP);
         }
 

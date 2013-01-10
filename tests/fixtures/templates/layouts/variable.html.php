@@ -1,2 +1,2 @@
 <?php
-echo $this->get('foo', 'fail');
+echo $view->get('foo', 'fail');

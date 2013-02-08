@@ -116,4 +116,14 @@ class TemplateTest extends \PHPUnit_Framework_TestCase
         $tpl->layout('variable');
         $this->assertEquals('bar', $tpl->content());
     }
+
+    public function testAutoLayoutRenderingOnDoubleTemplateRender()
+    {
+        Template::config(array('path_layouts' => $this->templateDir . 'layouts/', 'auto_layout' => 'div'));
+        $tpl = new Template('test');
+        $tpl->layout(false);
+        $content = $tpl->content();
+        $tpl2 = new Template('test');
+        $this->assertEquals('<div><p>Test</p></div>', $tpl2->content());
+    }
 }

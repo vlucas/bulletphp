@@ -13,7 +13,6 @@ class Block extends Template
 {
     // Setup
     protected $_name;
-    protected $_default;
 
     // Closures to make up block content
     protected $_closures = array();
@@ -26,9 +25,8 @@ class Block extends Template
     {
         $this->_name = $name;
 
-        if(null != $defaultContent) {
-            $this->ensureClosure($defaultContent);
-            $this->_default = $defaultContent;
+        if(null !== $defaultContent) {
+            $this->content($defaultContent);
         }
     }
 
@@ -40,10 +38,14 @@ class Block extends Template
      * @param string $name Block name
      * @param closure $closure Closure or anonymous function for block to execute and display
      */
-    public function content(\Closure $closure = null)
+    public function content($content = null)
     {
+        if($content !== null && !is_callable($content)) {
+            throw new \InvalidArgumentException("First argument must be a valid callback or closure. Given argument was not callable.");
+        }
+
         // Getter
-        if(null === $closure) {
+        if(null === $content) {
             $content = "";
             if($closures = $this->_closures) {
                 // Execute all closure callbacks
@@ -52,19 +54,12 @@ class Block extends Template
                         echo $closure();
                     }
                 $content = ob_get_clean();
-            } elseif($this->_default) {
-                $default = $this->_default;
-                ob_start();
-                    echo $default();
-                $content = ob_get_clean();
             }
-
-            // Return content
             return $content;
         }
 
         // Setter
-        $this->_closures = array($closure);
+        $this->_closures = array($content);
         return $this;
     }
 

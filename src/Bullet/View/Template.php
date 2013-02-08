@@ -98,6 +98,8 @@ class Template extends Response
     {
         if(!isset(self::$_blocks[$name])) {
             self::$_blocks[$name] = new Template\Block($name, $closure);
+        } else {
+            //throw new Exception("GET BLOCK " . $name . " (" . self::$_blocks[$name]->content() . ")");
         }
         return self::$_blocks[$name];
     }

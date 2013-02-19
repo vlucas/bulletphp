@@ -12,12 +12,12 @@ class App extends \Pimple
     protected $_curentPath;
     protected $_paramTypes = array();
     protected $_callbacks = array(
-      'path' => array(),
-      'param' => array(),
-      'method' => array(),
-      'subdomain' => array(),
-      'format' => array(),
-      'custom' => array()
+        'path' => array(),
+        'param' => array(),
+        'method' => array(),
+        'subdomain' => array(),
+        'format' => array(),
+        'custom' => array()
     );
     protected $_helpers = array();
 
@@ -198,48 +198,6 @@ class App extends \Pimple
     }
 
     /**
-     * Determine if the currently executing path is the full requested one
-     */
-    public function isRequestPath()
-    {
-        return $this->_currentPath === $this->_requestPath;
-    }
-
-    /**
-     * Send HTTP response with status code and content
-     */
-    public function response($statusCode = null, $content = null)
-    {
-        $res = null;
-
-        // Get current response (passed nothing)
-        if($statusCode === null) {
-            $res = $this->_response;
-
-        // Set response
-        } elseif($statusCode instanceof \Bullet\Response) {
-            $res = $this->_response = $statusCode;
-        }
-
-        // Create new response if none is going to be returned
-        if($res === null) {
-            $res = new \Bullet\Response($content, $statusCode);
-
-            // If content not set, use default HTTP
-            if($content === null) {
-                $res->content($res->statusText($statusCode));
-            }
-        }
-
-        // If this is the first response sent, store it
-        if($this->_response === null) {
-            $this->_response = $res;
-        }
-
-        return $res;
-    }
-
-    /**
      * Execute callbacks that match particular path segment
      */
     protected function _runPath($method, $path, \Closure $callback = null)
@@ -267,6 +225,11 @@ class App extends \Pimple
         if(isset($this->_callbacks['path'][$path])) {
             $cb = $this->_callbacks['path'][$path];
             $res = call_user_func($cb, $request);
+
+            // Ensure no other paths are parsed after full match is made
+            if($this->isRequestPath()) {
+                $this->_callbacks['param'] = array();
+            }
         }
 
         // Run 'param' callbacks
@@ -319,6 +282,48 @@ class App extends \Pimple
         } else {
             // Empty out collected method callbacks
             $this->_callbacks['format'] = array();
+        }
+
+        return $res;
+    }
+
+    /**
+     * Determine if the currently executing path is the full requested one
+     */
+    public function isRequestPath()
+    {
+        return $this->_currentPath === $this->_requestPath;
+    }
+
+    /**
+     * Send HTTP response with status code and content
+     */
+    public function response($statusCode = null, $content = null)
+    {
+        $res = null;
+
+        // Get current response (passed nothing)
+        if($statusCode === null) {
+            $res = $this->_response;
+
+        // Set response
+        } elseif($statusCode instanceof \Bullet\Response) {
+            $res = $this->_response = $statusCode;
+        }
+
+        // Create new response if none is going to be returned
+        if($res === null) {
+            $res = new \Bullet\Response($content, $statusCode);
+
+            // If content not set, use default HTTP
+            if($content === null) {
+                $res->content($res->statusText($statusCode));
+            }
+        }
+
+        // If this is the first response sent, store it
+        if($this->_response === null) {
+            $this->_response = $res;
         }
 
         return $res;

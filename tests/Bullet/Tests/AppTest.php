@@ -138,6 +138,40 @@ class AppTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals($expected, $collect);
     }
 
+    public function testExactPathMatchNotInParamCapture()
+    {
+        $app = new Bullet\App();
+        $app->path('/ping', function($request) use($app) {
+            $app->param('slug', function($request, $slug) use($app) {
+                return $slug;
+            });
+
+            return "pong";
+        });
+
+        $response = $app->run('GET', '/ping');
+        $this->assertEquals("pong", $response->content());
+    }
+
+    public function testGetHandlerBeforeParamCapture()
+    {
+        $app = new Bullet\App();
+        $app->path('/ping', function($request) use($app) {
+            $app->get(function($request) use($app) {
+                return "pong";
+            });
+
+            $app->param('slug', function($request, $slug) use($app) {
+                $app->get(function($request) use($slug) {
+                    return $slug;
+                });
+            });
+        });
+
+        $response = $app->run('GET', '/ping');
+        $this->assertEquals("pong", $response->content());
+    }
+
     public function testLeadingAndTrailingSlashesInPathGetStripped()
     {
         $collect = array();

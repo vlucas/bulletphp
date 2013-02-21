@@ -225,6 +225,7 @@ class App extends \Pimple
 
         // Default response is boolean false (produces 404 Not Found)
         $res = false;
+        $pathMatched = false;
 
         // Run 'subdomain' callbacks
         $subdomain = strtolower($request->subdomain());
@@ -238,15 +239,16 @@ class App extends \Pimple
         if(isset($this->_callbacks['path'][$path])) {
             $cb = $this->_callbacks['path'][$path];
             $res = call_user_func($cb, $request);
+            $pathMatched = true;
 
             // Ensure no other paths are parsed after full match is made
             if($this->isRequestPath()) {
-                $this->_callbacks['param'] = array();
+                $this->resetCallbacks('param');
             }
         }
 
         // Run 'param' callbacks
-        if(count($this->_callbacks['param']) > 0) {
+        if(!$pathMatched && count($this->_callbacks['param']) > 0) {
             foreach($this->_callbacks['param'] as $filter => $cb) {
                 // Use matching registered filter type callback if given a non-callable string
                 if(is_string($filter) && !is_callable($filter) && isset($this->_paramTypes[$filter])) {
@@ -294,8 +296,8 @@ class App extends \Pimple
                 $res = $this->response(406);
             }
         } else {
-            // Empty out collected method callbacks
-            $this->_callbacks['format'] = array();
+            // Empty out collected format callbacks
+            $this->resetCallbacks('format');
         }
 
         return $res;

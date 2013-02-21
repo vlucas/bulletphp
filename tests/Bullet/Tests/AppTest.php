@@ -196,6 +196,31 @@ class AppTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals('Not Found', $response2->content());
     }
 
+    public function testDoubleSlugMethodHandler()
+    {
+        $app = new Bullet\App();
+        $app->path('/ping', function($request) use($app) {
+            $app->get(function($request) use($app) {
+                return "pong";
+            });
+
+            $app->param('slug', function($request, $slug1) use($app) {
+                $app->get(function($request) use($slug1) {
+                    return $slug1;
+                });
+
+                $app->param('slug', function($request, $slug2) use($app, $slug1) {
+                    $app->get(function($request) use($slug1, $slug2) {
+                        return $slug1 . "/" . $slug2;
+                    });
+                });
+            });
+        });
+
+        $response = $app->run('GET', '/ping/slug1');
+        $this->assertEquals("slug1", $response->content());
+    }
+
     public function testLeadingAndTrailingSlashesInPathGetStripped()
     {
         $collect = array();

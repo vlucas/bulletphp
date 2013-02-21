@@ -172,6 +172,30 @@ class AppTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals("pong", $response->content());
     }
 
+    public function testParamCallbacksGetClearedAfterMatch()
+    {
+        $app = new Bullet\App();
+        $app->path('about', function() use ($app){
+            $page = 'about';
+            $app->get(function() use ($app,$page){
+                return 'about';
+            });
+
+            $app->param('slug',function($request,$slug) use ($app,$page){
+                $app->get(function() use ($app,$page,$slug){
+                    return $page.'-'.$slug;
+                });
+            });
+        });
+
+        $response1 = $app->run('GET', 'about/slug');
+        $this->assertEquals(200, $response1->status());
+        $this->assertEquals('about-slug', $response1->content());
+        $response2 = $app->run('GET', 'about/slug/foo/bar');
+        $this->assertEquals(404, $response2->status());
+        $this->assertEquals('Not Found', $response2->content());
+    }
+
     public function testLeadingAndTrailingSlashesInPathGetStripped()
     {
         $collect = array();

@@ -62,8 +62,20 @@ class App extends \Pimple
     /**
      * Reset/clear all callbacks to their initial state
      */
-    public function resetCallbacks()
+    public function resetCallbacks($types = null)
     {
+        if(is_string($types)) {
+            $types = (array) $types;
+        }
+        if(is_array($types)) {
+            foreach($this->_callbacks as $type => $stack) {
+                if(in_array($type, $types, true)) {
+                    $this->_callbacks[$type] = array();
+                }
+            }
+            return true;
+        }
+
         $this->_callbacks = array(
             'path' => array(),
             'param' => array(),
@@ -165,6 +177,7 @@ class App extends \Pimple
                 // Run filters and assign response
                 $this->filter($events, array($e));
                 $response = $this->response();
+                break;
             }
         }
 
@@ -260,12 +273,13 @@ class App extends \Pimple
             if(isset($this->_callbacks['method'][$method])) {
                 $cb = $this->_callbacks['method'][$method];
                 $res = call_user_func($cb, $request);
+                $this->resetCallbacks(array('param', 'path'));
             } else {
                 $res = $this->response(405);
             }
         } else {
             // Empty out collected method callbacks
-            $this->_callbacks['method'] = array();
+            $this->resetCallbacks('method');
         }
 
         // Run 'format' callbacks if the path is the full one AND the requested format matches a callback

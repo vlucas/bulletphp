@@ -20,6 +20,7 @@ class App extends \Pimple
         'custom' => array()
     );
     protected $_helpers = array();
+    protected $_contentConverters = array();
 
     /**
      * New App instance
@@ -46,6 +47,16 @@ class App extends \Pimple
         $this->registerParamType('email', function($value) {
             return filter_var($value, FILTER_VALIDATE_EMAIL);
         });
+
+        $this->registerContentConverter(
+            function($value) {
+                return is_array($value);
+            },
+            function($value) {
+                return json_encode($value);
+            },
+            'application/json'
+        );
 
         // Pimple constructor
         parent::__construct($values);
@@ -195,11 +206,8 @@ class App extends \Pimple
             }
         }
 
-        // JSON headers and response if content is an array
-        if(is_array($response->content())) {
-            $response->header('Content-Type', 'application/json');
-            $response->content(json_encode($response->content()));
-        }
+        // Apply defined response content converters
+        $this->_convertResponseContent($response);
 
         // Set current outgoing response
         $this->response($response);
@@ -684,5 +692,44 @@ class App extends \Pimple
     public function __sleep()
     {
         return array();
+    }
+
+    /**
+     * Add a set of content converter closures. If a response's content matches
+     * our test closure we will run it through a converter closure and set the
+     * content type.
+     *
+     * @param \Closure $test Closure to test against response content.
+     * @param \Closure $converter Closure to modify response content.
+     * @param string $contentType The new contentType for the response
+     *
+     * @returns \Bullet\App
+     */
+    public function registerContentConverter(\Closure $test, \Closure $converter, $contentType)
+    {
+        $this->_contentConverters[] = array(
+            'test'        => $test,
+            'converter'   => $converter,
+            'contentType' => $contentType
+        );
+
+        return $this;
+    }
+
+    /**
+     * Loop through registered content converters and apply the first that
+     * passes. Will modify response content and contentType
+     *
+     * @param \Bullet\Response $response The response to convert
+     */
+    protected function _convertResponseContent($response)
+    {
+        foreach($this->_contentConverters as $converter) {
+            if(call_user_func($converter['test'], $response->content())) {
+                $response->content(call_user_func($converter['converter'], $response->content()));
+                $response->header('Content-Type', $converter['contentType']);
+                break;
+            }
+        }
     }
 }

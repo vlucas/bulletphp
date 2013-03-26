@@ -915,6 +915,59 @@ class AppTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals(200, $result->status());
         $this->assertEquals("GET www", $result->content());
     }
+
+    public function testDefaultArrayToJSONContentConverterStillWorks()
+    {
+        $app = new Bullet\App();
+        $app->path('/', function($request) use($app) {
+            return array('foo' => 'bar');
+        });
+
+        $request = new \Bullet\Request('GET', '/');
+        $result = $app->run($request);
+
+        $this->assertEquals(json_encode(array('foo' => 'bar')), $result->content());
+        $this->assertEquals('application/json', $result->contentType());
+    }
+
+    public function testResponseWithNoContentConverterIsUnchanged()
+    {
+        $app = new Bullet\App();
+        $app->path('/', function($request) use($app) {
+            return 'foobar';
+        });
+
+        $request = new \Bullet\Request('GET', '/');
+        $result = $app->run($request);
+
+        $this->assertEquals('foobar', $result->content());
+        $this->assertEquals('text/html', $result->contentType());
+    }
+
+    public function testResponseWithSpecificClassGetsConverted()
+    {
+        $app = new Bullet\App();
+        $app->path('/', function($request) use($app) {
+            return new TestHelper();
+        });
+
+        $app->registerContentConverter(
+            function($value) {
+                return $value instanceof TestHelper;
+            },
+            function($value) {
+                return $value->something();
+            },
+            'text/plain'
+        );
+
+        $request = new \Bullet\Request('GET', '/');
+        $result = $app->run($request);
+
+        $this->assertEquals('something', $result->content());
+        $this->assertEquals('text/plain', $result->contentType());
+    }
+
 }
 
 class TestHelper

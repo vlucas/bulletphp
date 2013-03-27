@@ -915,6 +915,99 @@ class AppTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals(200, $result->status());
         $this->assertEquals("GET www", $result->content());
     }
+
+    public function testDefaultArrayToJSONContentConverterStillWorks()
+    {
+        $app = new Bullet\App();
+        $app->path('/', function($request) use($app) {
+            return array('foo' => 'bar');
+        });
+
+        $request = new \Bullet\Request('GET', '/');
+        $result = $app->run($request);
+
+        $this->assertEquals(json_encode(array('foo' => 'bar')), $result->content());
+        $this->assertEquals('application/json', $result->contentType());
+    }
+
+    public function testResponseWithNoContentConverterIsUnchanged()
+    {
+        $app = new Bullet\App();
+        $app->path('/', function($request) use($app) {
+            return 'foobar';
+        });
+
+        $request = new \Bullet\Request('GET', '/');
+        $result = $app->run($request);
+
+        $this->assertEquals('foobar', $result->content());
+        $this->assertEquals('text/html', $result->contentType());
+    }
+
+    public function testResponseOfSpecificClassGetsConverted()
+    {
+        $app = new Bullet\App();
+        $app->path('/', function($request) use($app) {
+            return new TestHelper();
+        });
+
+        $app->registerResponseHandler(
+            function($response) {
+                return $response->content() instanceof TestHelper;
+            },
+            function($response) {
+                $response->contentType('text/plain');
+                $response->content($response->content()->something());
+            }
+        );
+
+        $request = new \Bullet\Request('GET', '/');
+        $result = $app->run($request);
+
+        $this->assertEquals('something', $result->content());
+        $this->assertEquals('text/plain', $result->contentType());
+    }
+
+    public function testThatAllApplicableResponseHandlersAreApplied()
+    {
+        $app = new Bullet\App();
+        $app->path('/', function($request) use($app) {
+            return 'a';
+        });
+
+        // Always extend my response
+        $app->registerResponseHandler(
+            null,
+            function($response) {
+                $response->content($response->content() . 'b');
+            }
+        );
+
+        // Further extend the response as condition returns true
+        $app->registerResponseHandler(
+            function($response) {
+                return true;
+            },
+            function($response) {
+                $response->content($response->content() . 'c');
+            }
+        );
+
+        // Condition returns false so handler should not be applied
+        $app->registerResponseHandler(
+            function($response) {
+                return false;
+            },
+            function($response) {
+                $response->content($response->content() . 'd');
+            }
+        );
+
+        $request = new \Bullet\Request('GET', '/');
+        $result = $app->run($request);
+
+        $this->assertEquals('abc', $result->content());
+    }
 }
 
 class TestHelper

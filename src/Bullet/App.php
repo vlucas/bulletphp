@@ -20,6 +20,7 @@ class App extends \Pimple
         'custom' => array()
     );
     protected $_helpers = array();
+    protected $_responseHandlers = array();
 
     /**
      * New App instance
@@ -46,6 +47,16 @@ class App extends \Pimple
         $this->registerParamType('email', function($value) {
             return filter_var($value, FILTER_VALIDATE_EMAIL);
         });
+
+        $this->registerResponseHandler(
+            function($response) {
+                return is_array($response->content());
+            },
+            function($response) {
+                $response->contentType('application/json');
+                $response->content(json_encode($response->content()));
+            }
+        );
 
         // Pimple constructor
         parent::__construct($values);
@@ -181,25 +192,8 @@ class App extends \Pimple
             }
         }
 
-        // Ensure response is always a Bullet\Response
-        if($response === false) {
-            // Boolean false result generates a 404
-            $response = $this->response(404);
-        } elseif(is_int($response)) {
-            // Assume int response is desired HTTP status code
-            $response = $this->response($response);
-        } else {
-            // Convert response to Bullet\Response object if not one already
-            if(!($response instanceof \Bullet\Response)) {
-                $response = $this->response(200, $response);
-            }
-        }
-
-        // JSON headers and response if content is an array
-        if(is_array($response->content())) {
-            $response->header('Content-Type', 'application/json');
-            $response->content(json_encode($response->content()));
-        }
+        // Perform last minute operations on our response
+        $response = $this->_handleResponse($response);
 
         // Set current outgoing response
         $this->response($response);
@@ -684,5 +678,69 @@ class App extends \Pimple
     public function __sleep()
     {
         return array();
+    }
+
+    /**
+     * Register a response handler to potentially be applied to responses
+     * returned by \Bullet\App::run. Each callback is given the
+     * \Bullet\Response object as a parameter.
+     *
+     * @param callable $condtion Function name or closure to test against response
+     * @param callable $handler Function name or closure to modify response
+     *
+     * @returns \Bullet\App
+     */
+    public function registerResponseHandler($condition, $handler)
+    {
+        if(null !== $condition && !is_callable($condition)) {
+            throw new \InvalidArgumentException("First argument to " . __METHOD__ . " must be a valid callback or NULL. Given argument was neither.");
+        }
+        if(!is_callable($handler)) {
+            throw new \InvalidArgumentException("Second argument to " . __METHOD__ . " must be a valid callback. Given argument was not callable.");
+        }
+
+        $this->_responseHandlers[] = array(
+            'condition' => $condition,
+            'handler'   => $handler
+        );
+
+        return $this;
+    }
+
+    /**
+     * Modify response to prepare it for returning.
+     *
+     * Applies special logic for particular response types and ensure response
+     * is a \Bullet\Response object.
+     *
+     * Loops through registered response handlers and applies any with a null
+     * condition or whose condition evaluates to true.
+     *
+     * @param mixed $response The response to act upon.
+     */
+    protected function _handleResponse($response)
+    {
+        // Ensure response is always a Bullet\Response
+        if($response === false) {
+            // Boolean false result generates a 404
+            $response = $this->response(404);
+        } elseif(is_int($response)) {
+            // Assume int response is desired HTTP status code
+            $response = $this->response($response);
+        } else {
+            // Convert response to Bullet\Response object if not one already
+            if(!($response instanceof \Bullet\Response)) {
+                $response = $this->response(200, $response);
+            }
+        }
+
+        // Apply user defined response handlers
+        foreach($this->_responseHandlers as $handler) {
+            if(null === $handler['condition'] || call_user_func($handler['condition'], $response)) {
+                call_user_func($handler['handler'], $response);
+            }
+        }
+
+        return $response;
     }
 }

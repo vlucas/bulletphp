@@ -20,7 +20,7 @@ class App extends \Pimple
         'custom' => array()
     );
     protected $_helpers = array();
-    protected $_contentConverters = array();
+    protected $_responseHandlers = array();
 
     /**
      * New App instance
@@ -48,14 +48,14 @@ class App extends \Pimple
             return filter_var($value, FILTER_VALIDATE_EMAIL);
         });
 
-        $this->registerContentConverter(
-            function($value) {
-                return is_array($value);
+        $this->registerResponseHandler(
+            function($response) {
+                return is_array($response->content());
             },
-            function($value) {
-                return json_encode($value);
-            },
-            'application/json'
+            function($response) {
+                $response->contentType('application/json');
+                $response->content(json_encode($response->content()));
+            }
         );
 
         // Pimple constructor
@@ -192,22 +192,8 @@ class App extends \Pimple
             }
         }
 
-        // Ensure response is always a Bullet\Response
-        if($response === false) {
-            // Boolean false result generates a 404
-            $response = $this->response(404);
-        } elseif(is_int($response)) {
-            // Assume int response is desired HTTP status code
-            $response = $this->response($response);
-        } else {
-            // Convert response to Bullet\Response object if not one already
-            if(!($response instanceof \Bullet\Response)) {
-                $response = $this->response(200, $response);
-            }
-        }
-
-        // Apply defined response content converters
-        $this->_convertResponseContent($response);
+        // Perform last minute operations on our response
+        $response = $this->_handleResponse($response);
 
         // Set current outgoing response
         $this->response($response);
@@ -695,41 +681,66 @@ class App extends \Pimple
     }
 
     /**
-     * Add a set of content converter closures. If a response's content matches
-     * our test closure we will run it through a converter closure and set the
-     * content type.
+     * Register a response handler to potentially be applied to responses
+     * returned by \Bullet\App::run. Each callback is given the
+     * \Bullet\Response object as a parameter.
      *
-     * @param \Closure $test Closure to test against response content.
-     * @param \Closure $converter Closure to modify response content.
-     * @param string $contentType The new contentType for the response
+     * @param callable $condtion Function name or closure to test against response
+     * @param callable $handler Function name or closure to modify response
      *
      * @returns \Bullet\App
      */
-    public function registerContentConverter(\Closure $test, \Closure $converter, $contentType)
+    public function registerResponseHandler($condition, $handler)
     {
-        $this->_contentConverters[] = array(
-            'test'        => $test,
-            'converter'   => $converter,
-            'contentType' => $contentType
+        if(null !== $condition && !is_callable($condition)) {
+            throw new \InvalidArgumentException("First argument to " . __METHOD__ . " must be a valid callback or NULL. Given argument was neither.");
+        }
+        if(!is_callable($handler)) {
+            throw new \InvalidArgumentException("Second argument to " . __METHOD__ . " must be a valid callback. Given argument was not callable.");
+        }
+
+        $this->_responseHandlers[] = array(
+            'condition' => $condition,
+            'handler'   => $handler
         );
 
         return $this;
     }
 
     /**
-     * Loop through registered content converters and apply the first that
-     * passes. Will modify response content and contentType
+     * Modify response to prepare it for returning.
      *
-     * @param \Bullet\Response $response The response to convert
+     * Applies special logic for particular response types and ensure response
+     * is a \Bullet\Response object.
+     *
+     * Loops through registered response handlers and applies any with a null
+     * condition or whose condition evaluates to true.
+     *
+     * @param mixed $response The response to act upon.
      */
-    protected function _convertResponseContent($response)
+    protected function _handleResponse($response)
     {
-        foreach($this->_contentConverters as $converter) {
-            if(call_user_func($converter['test'], $response->content())) {
-                $response->content(call_user_func($converter['converter'], $response->content()));
-                $response->header('Content-Type', $converter['contentType']);
-                break;
+        // Ensure response is always a Bullet\Response
+        if($response === false) {
+            // Boolean false result generates a 404
+            $response = $this->response(404);
+        } elseif(is_int($response)) {
+            // Assume int response is desired HTTP status code
+            $response = $this->response($response);
+        } else {
+            // Convert response to Bullet\Response object if not one already
+            if(!($response instanceof \Bullet\Response)) {
+                $response = $this->response(200, $response);
             }
         }
+
+        // Apply user defined response handlers
+        foreach($this->_responseHandlers as $handler) {
+            if(null === $handler['condition'] || call_user_func($handler['condition'], $response)) {
+                call_user_func($handler['handler'], $response);
+            }
+        }
+
+        return $response;
     }
 }

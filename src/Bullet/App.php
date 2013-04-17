@@ -7,6 +7,7 @@ class App extends \Pimple
     protected $_response;
 
     protected $_paths = array();
+    protected static $_pathLevel = 0;
     protected $_requestMethod;
     protected $_requestPath;
     protected $_curentPath;
@@ -67,6 +68,7 @@ class App extends \Pimple
         }
 
         // Get callback stacks ready
+        self::$_pathLevel = 0;
         $this->resetCallbacks();
     }
 
@@ -81,7 +83,7 @@ class App extends \Pimple
         if(is_array($types)) {
             foreach($this->_callbacks as $type => $stack) {
                 if(in_array($type, $types, true)) {
-                    $this->_callbacks[$type] = array();
+                    $this->_callbacks[$type][self::$_pathLevel] = array();
                 }
             }
             return true;
@@ -101,14 +103,14 @@ class App extends \Pimple
     {
         foreach((array) $path as $p) {
             $p = trim($p, '/');
-            $this->_callbacks['path'][$p] = $this->_prepClosure($callback);
+            $this->_callbacks['path'][self::$_pathLevel][$p] = $this->_prepClosure($callback);
         }
         return $this;
     }
 
     public function param($param, \Closure $callback)
     {
-        $this->_callbacks['param'][$param] = $this->_prepClosure($callback);
+        $this->_callbacks['param'][self::$_pathLevel][$param] = $this->_prepClosure($callback);
         return $this;
     }
 
@@ -143,6 +145,7 @@ class App extends \Pimple
     public function run($method, $uri = null)
     {
         $response = false;
+        self::$_pathLevel = 0;
 
         // If Request instance was passed in as the first parameter
         if($method instanceof \Bullet\Request) {
@@ -223,15 +226,17 @@ class App extends \Pimple
 
         // Run 'subdomain' callbacks
         $subdomain = strtolower($request->subdomain());
-        if(isset($this->_callbacks['subdomain'][$subdomain])) {
-            $cb = $this->_callbacks['subdomain'][$subdomain];
+        if(isset($this->_callbacks['subdomain'][self::$_pathLevel][$subdomain])) {
+            $cb = $this->_callbacks['subdomain'][self::$_pathLevel][$subdomain];
             $this->resetCallbacks();
+            self::$_pathLevel++;
             $res = call_user_func($cb, $request);
         }
 
         // Run 'path' callbacks
-        if(isset($this->_callbacks['path'][$path])) {
-            $cb = $this->_callbacks['path'][$path];
+        if(isset($this->_callbacks['path'][self::$_pathLevel][$path])) {
+            $cb = $this->_callbacks['path'][self::$_pathLevel][$path];
+            self::$_pathLevel++;
             $res = call_user_func($cb, $request);
             $pathMatched = true;
 
@@ -242,8 +247,8 @@ class App extends \Pimple
         }
 
         // Run 'param' callbacks
-        if(!$pathMatched && count($this->_callbacks['param']) > 0) {
-            foreach($this->_callbacks['param'] as $filter => $cb) {
+        if(!$pathMatched && isset($this->_callbacks['param'][self::$_pathLevel]) && count($this->_callbacks['param'][self::$_pathLevel]) > 0) {
+            foreach($this->_callbacks['param'][self::$_pathLevel] as $filter => $cb) {
                 // Use matching registered filter type callback if given a non-callable string
                 if(is_string($filter) && !is_callable($filter) && isset($this->_paramTypes[$filter])) {
                     $filter = $this->_paramTypes[$filter];
@@ -257,17 +262,19 @@ class App extends \Pimple
                     // Pass callback test function return value if not boolean
                     $path = $param;
                 }
+                self::$_pathLevel++;
                 $res = call_user_func($cb, $request, $path);
                 break;
             }
         }
 
         // Run 'method' callbacks if the path is the full requested one
-        if($this->isRequestPath() && count($this->_callbacks['method']) > 0) {
+        if($this->isRequestPath() && isset($this->_callbacks['method'][self::$_pathLevel]) && count($this->_callbacks['method'][self::$_pathLevel]) > 0) {
             // If there are ANY method callbacks, use if matches method, return 405 if not
             // If NO method callbacks are present, path return value will be used, or 404
-            if(isset($this->_callbacks['method'][$method])) {
-                $cb = $this->_callbacks['method'][$method];
+            if(isset($this->_callbacks['method'][self::$_pathLevel][$method])) {
+                $cb = $this->_callbacks['method'][self::$_pathLevel][$method];
+                self::$_pathLevel++;
                 $res = call_user_func($cb, $request);
                 $this->resetCallbacks(array('param', 'path'));
             } else {
@@ -280,11 +287,12 @@ class App extends \Pimple
 
         // Run 'format' callbacks if the path is the full one AND the requested format matches a callback
         $format = $this->_request->format();
-        if($this->isRequestPath() && count($this->_callbacks['format']) > 0) {
+        if($this->isRequestPath() && isset($this->_callbacks['format'][self::$_pathLevel]) && count($this->_callbacks['format'][self::$_pathLevel]) > 0) {
             // If there are ANY format callbacks, use if matches format, return 406 if not
             // If NO method callbacks are present, path return value will be used, or 404
-            if(isset($this->_callbacks['format'][$format])) {
-                $cb = $this->_callbacks['format'][$format];
+            if(isset($this->_callbacks['format'][self::$_pathLevel][$format])) {
+                $cb = $this->_callbacks['format'][self::$_pathLevel][$format];
+                self::$_pathLevel++;
                 $res = call_user_func($cb, $request);
             } else {
                 $res = $this->response(406);
@@ -404,7 +412,7 @@ class App extends \Pimple
     public function method($methods, \Closure $callback)
     {
         foreach((array) $methods as $method) {
-            $this->_callbacks['method'][strtoupper($method)] = $this->_prepClosure($callback);
+            $this->_callbacks['method'][self::$_pathLevel][strtoupper($method)] = $this->_prepClosure($callback);
         }
         return $this;
     }
@@ -418,7 +426,7 @@ class App extends \Pimple
     public function subdomain($subdomains, \Closure $callback)
     {
         foreach((array) $subdomains as $subdomain) {
-            $this->_callbacks['subdomain'][strtolower($subdomain)] = $this->_prepClosure($callback);
+            $this->_callbacks['subdomain'][self::$_pathLevel][strtolower($subdomain)] = $this->_prepClosure($callback);
         }
         return $this;
     }
@@ -432,7 +440,7 @@ class App extends \Pimple
     public function format($formats, \Closure $callback)
     {
         foreach((array) $formats as $format) {
-            $this->_callbacks['format'][strtolower($format)] = $this->_prepClosure($callback);
+            $this->_callbacks['format'][self::$_pathLevel][strtolower($format)] = $this->_prepClosure($callback);
         }
         return $this;
     }

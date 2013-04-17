@@ -4,8 +4,13 @@ use Bullet;
 use Bullet\Request;
 use Bullet\Response;
 
+/**
+ * @backupGlobals disabled
+ */
 class AppTest extends \PHPUnit_Framework_TestCase
 {
+    protected $backupGlobalsBlacklist = array('app');
+
     public function testSinglePathGet()
     {
         $collect = array();
@@ -51,7 +56,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
         $app->run('GET', '/test/foo/bar/');
 
         $expect = array('test', 'foo');
-        $this->assertEquals($collect, $expect);
+        $this->assertEquals($expect, $collect);
     }
 
     public function testDoublePathGetReturnValues()
@@ -72,7 +77,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
         $collect = (string) $app->run('GET', '/test/foo/');
 
         $expect = 'foo';
-        $this->assertEquals($collect, $expect);
+        $this->assertEquals($expect, $collect);
     }
 
     public function testNonmatchingPathRunReturns404()
@@ -151,6 +156,48 @@ class AppTest extends \PHPUnit_Framework_TestCase
 
         $response = $app->run('GET', '/ping');
         $this->assertEquals("pong", $response->content());
+    }
+
+    public function testRepeatPathnameNested()
+    {
+        $app = new Bullet\App();
+        $app->path('/about/', function($request) use ($app) {
+            // return data for my "about" path
+            return 'about';
+        });
+
+        $app->path('/rels/', function($request) use($app) {
+            $app->param('slug', function($request, $rel) use($app) {
+                // return the documentation page for /rels/{rel} such as /rels/about
+                return 'rel/' . $rel;
+            });
+        });
+
+        $response = $app->run('GET', '/rels/about/');
+        $this->assertEquals("rel/about", $response->content());
+    }
+
+    public function testRepeatPathnameNestedPathInsideParam()
+    {
+        $app = new Bullet\App();
+        $app->path('/about/', function($request) use ($app) {
+            // return data for my "about" path
+            return 'about';
+        });
+
+        $app->path('/rels/', function($request) use($app) {
+            $app->param('slug', function($request, $rel) use($app) {
+                $app->path('/test/', function($request) use ($app, $rel) {
+                    return 'rel/' . $rel . '/test';
+                });
+
+                // return the documentation page for /rels/{rel} such as /rels/about
+                return 'rel/' . $rel;
+            });
+        });
+
+        $response = $app->run('GET', '/rels/about/test');
+        $this->assertEquals("rel/about/test", $response->content());
     }
 
     public function testGetHandlerBeforeParamCapture()

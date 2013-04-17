@@ -1055,6 +1055,29 @@ class AppTest extends \PHPUnit_Framework_TestCase
 
         $this->assertEquals('abc', $result->content());
     }
+
+    public function testHMVCNestedRouting()
+    {
+        $app = new Bullet\App();
+
+        $app->path('a', function($request) use($app) {
+            $app->path('b', function($request) use($app) {
+                return 'a/b';
+            });
+        });
+
+        $app->path('c', function($request) use($app) {
+            $app->path('a', function($request) use($app) {
+                $app->path('b', function($request) use($app) {
+                    $a = $app->run('GET', 'a/b');
+                    return $a->content() . " + c/a/b";
+                });
+            });
+        });
+
+        $result = $app->run('GET', 'c/a/b');
+        $this->assertEquals('a/b + c/a/b', $result->content());
+    }
 }
 
 class TestHelper

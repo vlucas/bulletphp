@@ -317,7 +317,7 @@ class Response
 
         // Get body content to return
         try {
-            $content = $this->content();
+            $content = (string) $this->content();
         } catch(\Exception $e) {
             $content = (string) $e;
             $this->status(500);

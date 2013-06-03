@@ -1,6 +1,6 @@
 {
     "name": "vlucas/bulletphp",
-    "version": "1.2.1",
+    "version": "1.2.3",
     "type": "library",
     "description": "A heierarchical resource-oriented micro-framework built on nested closures instead of route-based callbacks",
     "keywords": ["framework", "microphp", "micro", "microframework", "router", "routing"],

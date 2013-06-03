@@ -126,4 +126,23 @@ class TemplateTest extends \PHPUnit_Framework_TestCase
         $tpl2 = new Template('test');
         $this->assertEquals('<div><p>Test</p></div>', $tpl2->content());
     }
+
+    /**
+     * @expectedException \Exception
+     */
+    public function testExceptionThrownInTemplate()
+    {
+        $app = new Bullet\App();
+        $app->path('test', function() use($app) {
+            return $app->template('exception');
+        });
+
+        $res = $app->run('GET', '/test/');
+    }
+
+    public function testTemplateHandlesExceptionThrownInToString()
+    {
+        $tpl = new Template('exception');
+        $this->assertContains('Exception thrown inside a template! Oh noes!', (string) $tpl);
+    }
 }

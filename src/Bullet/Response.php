@@ -315,13 +315,20 @@ class Response
             session_write_close();
         }
 
+        // Get body content to return
+        try {
+            $content = $this->content();
+        } catch(\Exception $e) {
+            $content = (string) $e;
+            $this->status(500);
+        }
+
         // Send headers if not already sent
         if(!headers_sent()) {
             $this->sendStatus();
             $this->sendHeaders();
         }
 
-        // Return body content
-        return $this->content();
+        return $content;
     }
 }

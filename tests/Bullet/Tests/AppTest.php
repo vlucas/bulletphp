@@ -1078,6 +1078,33 @@ class AppTest extends \PHPUnit_Framework_TestCase
         $result = $app->run('GET', 'c/a/b');
         $this->assertEquals('a/b + c/a/b', $result->content());
     }
+
+    public function testHMVCNestedRoutingWithSubdomain()
+    {
+        $app = new Bullet\App();
+
+        $app->subdomain('test', function($request) use($app) {
+            $app->path('a', function($request) use($app) {
+                $app->path('b', function($request) use($app) {
+                    return 'a/b';
+                });
+            });
+
+            $app->path('c', function($request) use($app) {
+                $app->path('a', function($request) use($app) {
+                    $app->path('b', function($request) use($app) {
+                        $request = new \Bullet\Request('GET', 'a/b', array(), array('Host' => 'test.bulletphp.com'));
+                        $a = $app->run($request);
+                        return $a->content() . " + c/a/b";
+                    });
+                });
+            });
+        });
+
+        $request = new \Bullet\Request('GET', 'c/a/b', array(), array('Host' => 'test.bulletphp.com'));
+        $result = $app->run($request);
+        $this->assertEquals('a/b + c/a/b', $result->content());
+    }
 }
 
 class TestHelper

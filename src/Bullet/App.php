@@ -64,7 +64,10 @@ class App extends \Pimple
 
         // Template configuration settings if given
         if(isset($this['template.cfg'])) {
-            View\Template::config($this['template.cfg']);
+            $this['template'] = $this['template.cfg'];
+        }
+        if(isset($this['template'])) {
+            View\Template::config($this['template']);
         }
 
         // Get callback stacks ready
@@ -228,7 +231,6 @@ class App extends \Pimple
         $subdomain = strtolower($request->subdomain());
         if(isset($this->_callbacks['subdomain'][self::$_pathLevel][$subdomain])) {
             $cb = $this->_callbacks['subdomain'][self::$_pathLevel][$subdomain];
-            $this->resetCallbacks();
             self::$_pathLevel++;
             $res = call_user_func($cb, $request);
         }

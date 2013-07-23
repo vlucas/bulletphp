@@ -1105,6 +1105,20 @@ class AppTest extends \PHPUnit_Framework_TestCase
         $result = $app->run($request);
         $this->assertEquals('a/b + c/a/b', $result->content());
     }
+
+    /**
+     * @requires PHP 5.4
+     */
+    public function testPHP5_4ClosureBinding()
+    {
+        $app = new Bullet\App();
+        $app->path('php5_4', function($request) {
+            return $this->url('/worked/');
+        });
+
+        $result = $app->run('GET', '/php5_4/');
+        $this->assertEquals('cli:/worked/', $result->content());
+    }
 }
 
 class TestHelper

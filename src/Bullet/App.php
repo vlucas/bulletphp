@@ -133,7 +133,7 @@ class App extends \Pimple
     {
         // Bind local context for PHP >= 5.4
         if (version_compare(PHP_VERSION, '5.4.0') >= 0) {
-            $closure->bindTo($this);
+            $closure = $closure->bindTo($this);
         }
         return $closure;
     }
@@ -538,7 +538,7 @@ class App extends \Pimple
     public function on($event, $callback)
     {
         if(!is_callable($callback)) {
-            throw new \InvalidArgumentException("Second argument is expected to be a valid callback or closure. Got: " . gettype($callback));	
+            throw new \InvalidArgumentException("Second argument is expected to be a valid callback or closure. Got: " . gettype($callback));
         }
 
         // Allow for an array of events to be passed in
@@ -603,34 +603,9 @@ class App extends \Pimple
             $eventName = get_class($eventName);
         }
         if(!is_scalar($eventName)) {
-            throw new \InvalidArgumentException("Event name is expected to be a scalar value (integer, float, string, or boolean). Got: " . gettype($eventName) . " (" . var_export($eventName, true) . ")");	
+            throw new \InvalidArgumentException("Event name is expected to be a scalar value (integer, float, string, or boolean). Got: " . gettype($eventName) . " (" . var_export($eventName, true) . ")");
         }
         return (string) $eventName;
-    }
-
-    /**
-     * Handle exception using exception handling callbacks, if any
-     */
-    public function handleException(\Exception $e)
-    {
-        foreach($this->_callbacks['exception'] as $handler) {
-            $res = call_user_func($handler, $e);
-            if($res !== null) {
-                return $res;
-            }
-        }
-
-        // Re-throw exception if there are no registered exception handlers
-        throw $e;
-    }
-
-    /**
-     * Implementing for Rackem\Rack (PHP implementation of Rack)
-     */
-    public function call($env)
-    {
-        $response = $this->run($env['REQUEST_METHOD'], $env['PATH_INFO']);
-        return array($response->status(), $response->headers(), $response->content());
     }
 
     /**
@@ -657,10 +632,10 @@ class App extends \Pimple
     public function addMethod($method, $callback)
     {
         if(!is_callable($callback)) {
-            throw new \InvalidArgumentException("Second argument is expected to be a valid callback or closure.");	
+            throw new \InvalidArgumentException("Second argument is expected to be a valid callback or closure.");
         }
         if(method_exists($this, $method)) {
-            throw new \InvalidArgumentException("Method '" . $method . "' already exists on " . __CLASS__);	
+            throw new \InvalidArgumentException("Method '" . $method . "' already exists on " . __CLASS__);
         }
         $this->_callbacks['custom'][$method] = $callback;
     }
@@ -678,7 +653,7 @@ class App extends \Pimple
             $callback = $this->_callbacks['custom'][$method];
             return call_user_func_array($callback, $args);
         } else {
-            throw new \BadMethodCallException("Method '" . __CLASS__ . "::" . $method . "' not found");	
+            throw new \BadMethodCallException("Method '" . __CLASS__ . "::" . $method . "' not found");
         }
     }
 

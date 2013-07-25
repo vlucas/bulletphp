@@ -40,7 +40,7 @@ class Response
 
     /**
      * Set HTTP header
-     * 
+     *
      * @param string $type HTTP header type
      * @param string $content header content/value
      */
@@ -68,7 +68,7 @@ class Response
 
     /**
      * Set HTTP status to return
-     * 
+     *
      * @param int $status HTTP status code
      */
     public function status($status = null)
@@ -83,7 +83,7 @@ class Response
 
     /**
      * Set HTTP encoding to use
-     * 
+     *
      * @param string $encoding Charset encoding to use
      */
     public function encoding($encoding = null)
@@ -98,7 +98,7 @@ class Response
 
     /**
      * Set HTTP response body
-     * 
+     *
      * @param string $content Content
      */
     public function content($content = null)
@@ -116,7 +116,7 @@ class Response
 
     /**
      * Set HTTP content type
-     * 
+     *
      * @param string $contentType Content-type for response
      */
     public function contentType($contentType = null)
@@ -153,7 +153,7 @@ class Response
 
     /**
      * See if the response has any redirects set
-     * 
+     *
      * @return boolean
      */
     public function hasRedirects()
@@ -164,11 +164,11 @@ class Response
 
     /**
      * See if the response has any redirects set
-     * 
+     *
      * @param string $location URL
      * @param int $status HTTP status code for redirect (3xx)
      */
-    public function redirect($location, $status = 301)
+    public function redirect($location, $status = 302)
     {
         $this->status($status);
         $this->header('Location', $location);

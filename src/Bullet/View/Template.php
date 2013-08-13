@@ -263,7 +263,8 @@ class Template extends Response
      */
     public function partial($template, array $vars = array())
     {
-        return new static($template, $vars);
+        $tpl = new static($template, $vars);
+        return $tpl->layout(false);
     }
 
 

@@ -106,7 +106,11 @@ class App extends \Pimple
     {
         foreach((array) $path as $p) {
             $p = trim($p, '/');
-            $this->_callbacks['path'][self::$_pathLevel][$p] = $this->_prepClosure($callback);
+            if(!isset($this->_callbacks['path'][self::$_pathLevel]) ||array_key_exists($p, $this->_callbacks['path'][self::$_pathLevel])==false){
+                $this->_callbacks['path'][self::$_pathLevel][$p] = $this->_prepClosure($callback);
+            }else{
+        		die('Duplicate Route Added:"'.$path.'":"'.$p.'"');
+        	}
         }
         return $this;
     }

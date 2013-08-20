@@ -303,7 +303,9 @@ class App extends \Pimple
             // Empty out collected format callbacks
             $this->resetCallbacks('format');
         }
-
+        if(!$pathMatched){
+            self::$_pathLevel++;
+        }
         return $res;
     }
 

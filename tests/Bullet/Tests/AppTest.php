@@ -1056,6 +1056,28 @@ class AppTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals('abc', $result->content());
     }
 
+    public function testNestedRoutesInsideParamCallback()
+    {
+        $app = new Bullet\App();
+
+        $app->path('admin', function($request) use($app) {
+            $app->path('client', function($request) use($app) {
+                $app->param('int', function($request,$id) use($app){
+                    $app->path('toggleVisiblity', function($request) use($app,$id) {
+                        $app->path('item', function($request) use($app,$id) {
+                            $app->get(function($request)use($app){
+                                return "deep";
+                            });
+                        });
+                    });
+                });
+            });
+        });
+
+        $result = $app->run('GET', '/admin/client/1/toggleVisiblity/item');
+        $this->assertEquals('deep', $result->content());
+    }
+
     public function testHMVCNestedRouting()
     {
         $app = new Bullet\App();

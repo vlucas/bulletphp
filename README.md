@@ -112,7 +112,7 @@ Use an `.htaccess` file for mod_rewrite (if you're using Apache)
       # Reroute any incoming requestst that is not an existing directory or file
       RewriteCond %{REQUEST_FILENAME} !-d
       RewriteCond %{REQUEST_FILENAME} !-f
-      RewriteRule ^(.*)$ index.php?u=$1 [L,QSA]
+      RewriteRule ^(.*)$ index.php?u=$1 [L,QSA,B]
     </IfModule>
 
 

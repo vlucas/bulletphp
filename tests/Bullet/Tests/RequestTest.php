@@ -100,6 +100,20 @@ class RequestTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals('123', $r->id);
     }
 
+    function testGetWithParamsAreSetInQuerystringData()
+    {
+        $r = new Bullet\Request('GET', '/users/129.json', array('id' => '124', 'foo' => 'bar'));
+        $this->assertEquals('124', $r->query('id'));
+        $this->assertEquals('bar', $r->query('foo'));
+    }
+
+    function testPostWithParamsAreSetInPostData()
+    {
+        $r = new Bullet\Request('POST', '/users/129.json', array('id' => '124', 'foo' => 'bar'));
+        $this->assertEquals('124', $r->post('id'));
+        $this->assertEquals('bar', $r->post('foo'));
+    }
+
     function testSubdomainCapture()
     {
         $r = new Bullet\Request('GET', '/', array(), array('Host' => 'test.bulletphp.com'));

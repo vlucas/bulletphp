@@ -20,6 +20,8 @@ class Request
     // Request parameters
     protected $_headers = array();
     protected $_params = array();
+    protected $_postParams = array();
+    protected $_queryParams = array();
     protected $_accept;
 
     // Other
@@ -78,6 +80,9 @@ class Request
             array_walk_recursive($_REQUEST, $stripslashes_gpc);
         }
 
+        $this->_postParams =& $_POST;
+        $this->_queryParams =& $_GET;
+
         // Set Method
         if($method !== null) {
             $this->_method = $method;
@@ -90,6 +95,12 @@ class Request
 
         // Set params if given
         if(!empty($params)) {
+            if($method === 'POST') {
+                $this->_postParams = $params;
+            } elseif($method === 'GET') {
+                $this->_queryParams = $params;
+            }
+
             $this->_params = $params;
         }
 
@@ -189,12 +200,12 @@ class Request
                 $value = $this->_params[$key];
                 break;
 
-            case isset($_GET[$key]):
-                $value = $_GET[$key];
+            case isset($this->_queryParams[$key]):
+                $value = $this->_queryParams[$key];
                 break;
 
-            case isset($_POST[$key]):
-                $value = $_POST[$key];
+            case isset($this->_postParams[$key]):
+                $value = $this->_postParams[$key];
                 break;
 
             case isset($_COOKIE[$key]):
@@ -276,9 +287,9 @@ class Request
         switch (true) {
             case isset($this->_params[$key]):
             return true;
-            case isset($_GET[$key]):
+            case isset($this->_queryParams[$key]):
             return true;
-            case isset($_POST[$key]):
+            case isset($this->_postParams[$key]):
             return true;
             case isset($_COOKIE[$key]):
             return true;
@@ -329,7 +340,7 @@ class Request
 
         // Getting
         } else {
-            $params = array_merge($_GET, $_POST, $this->_params);
+            $params = array_merge($this->_queryParams, $this->_postParams, $this->_params);
         }
         return $params;
     }
@@ -382,10 +393,10 @@ class Request
         {
         if (null === $key) {
             // Return _GET params without routing param or other params set by Alloy or manually on the request object
-            return array_diff_key($_GET, $this->param() + array('u' => 1));
+            return array_diff_key($this->_queryParams, $this->param() + array('u' => 1));
         }
 
-        return (isset($_GET[$key])) ? $_GET[$key] : $default;
+        return (isset($this->_queryParams[$key])) ? $this->_queryParams[$key] : $default;
     }
 
 
@@ -402,10 +413,10 @@ class Request
     public function post($key = null, $default = null)
     {
         if (null === $key) {
-            return $_POST;
+            return $this->_postParams;
         }
 
-        return (isset($_POST[$key])) ? $_POST[$key] : $default;
+        return (isset($this->_postParams[$key])) ? $this->_postParams[$key] : $default;
     }
 
 

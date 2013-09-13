@@ -105,6 +105,7 @@ class RequestTest extends \PHPUnit_Framework_TestCase
         $r = new Bullet\Request('GET', '/users/129.json', array('id' => '124', 'foo' => 'bar'));
         $this->assertEquals('124', $r->query('id'));
         $this->assertEquals('bar', $r->query('foo'));
+        $this->assertEquals(array('id' => '124', 'foo' => 'bar'), $r->query());
     }
 
     function testPostWithParamsAreSetInPostData()

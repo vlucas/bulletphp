@@ -99,9 +99,9 @@ class Request
                 $this->_postParams = $params;
             } elseif($method === 'GET') {
                 $this->_queryParams = $params;
+            } else {
+                $this->_params = $params;
             }
-
-            $this->_params = $params;
         }
 
         // Set Headers

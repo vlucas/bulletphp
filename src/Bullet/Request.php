@@ -176,7 +176,11 @@ class Request
 
             } else {
                 // HTTP request
-                $requestUrl = $this->get('u', '/');
+                if($url = $this->query('u')) {
+                    $requestUrl = $url;
+                } else {
+                    $requestUrl = $this->uri();
+                }
             }
             $this->_url = $requestUrl;
         }

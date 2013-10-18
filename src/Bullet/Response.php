@@ -44,15 +44,22 @@ class Response
      * @param string $type HTTP header type
      * @param string $content header content/value
      */
-    public function header($type, $content)
+    public function header($type, $content = null)
     {
-        // normalize headers ... not really needed
-        for ($tmp = explode("-", $type), $i=0;$i<count($tmp);$i++) {
+        if($content === null) {
+            if(isset($this->_headers[$type])) {
+                return $this->_headers[$type];
+            }
+            return false;
+        }
+
+        // Normalize headers to ensure proper case
+        for($tmp = explode("-", $type), $i=0;$i<count($tmp);$i++) {
             $tmp[$i] = ucfirst($tmp[$i]);
         }
 
         $type = implode("-", $tmp);
-        if ($type == 'Content-Type') {
+        if($type == 'Content-Type') {
             if (preg_match('/^(.*);\w*charset\w*=\w*(.*)/', $content, $matches)) {
                 $this->_contentType = $matches[1];
                 $this->_encoding = $matches[2];
@@ -63,6 +70,17 @@ class Response
             $this->_headers[$type] = $content;
         }
         return $this;
+    }
+
+
+    /**
+     * Get array of all HTTP headers
+     *
+     * @return array
+     */
+    public function headers()
+    {
+        return $this->_headers;
     }
 
 

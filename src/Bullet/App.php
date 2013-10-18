@@ -270,6 +270,14 @@ class App extends \Pimple
             }
         }
 
+        // OPTIONS request with no custom options handler should return 200 OK with 'Accept' header
+        if($pathMatched && $method === 'OPTIONS' && !isset($this->_callbacks['method'][self::$_pathLevel]['OPTIONS'])) {
+            $acceptMethods = array_keys($this->_callbacks['method'][self::$_pathLevel]);
+            $acceptMethodsString = implode(',', array_merge($acceptMethods, array('OPTIONS')));
+            $res = $this->response(200)->header('Allow', $acceptMethodsString);
+            return $res;
+        }
+
         // Run 'method' callbacks if the path is the full requested one
         if($this->isRequestPath() && isset($this->_callbacks['method'][self::$_pathLevel]) && count($this->_callbacks['method'][self::$_pathLevel]) > 0) {
             // If there are ANY method callbacks, use if matches method, return 405 if not
@@ -403,6 +411,22 @@ class App extends \Pimple
     public function patch(\Closure $callback)
     {
         return $this->method('PATCH', $callback);
+    }
+
+    /**
+     * Handle HEAD method
+     */
+    public function head(\Closure $callback)
+    {
+        return $this->method('HEAD', $callback);
+    }
+
+    /**
+     * Handle OPTIONS method
+     */
+    public function options(\Closure $callback)
+    {
+        return $this->method('OPTIONS', $callback);
     }
 
     /**

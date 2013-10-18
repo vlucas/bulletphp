@@ -126,4 +126,42 @@ class RequestTest extends \PHPUnit_Framework_TestCase
         $r = new Bullet\Request('GET', '/', array(), array('Host' => 'bulletphp.com'));
         $this->assertFalse($r->subdomain());
     }
+
+    function testOptionsHeader()
+    {
+        $app = new Bullet\App();
+        $req = new Bullet\Request('OPTIONS', '/test');
+        $app->path('test', function($request) use($app) {
+            $app->get(function($request) {
+                return 'GET';
+            });
+            $app->post(function($request) {
+                return 'POST';
+            });
+        });
+        $res = $app->run($req);
+        $this->assertEquals('OK', $res->content());
+        $this->assertEquals('GET,POST,OPTIONS', $res->header('Allow'));
+    }
+
+    function testOptionsHeaderWithCustomOptionsRoute()
+    {
+        $app = new Bullet\App();
+        $req = new Bullet\Request('OPTIONS', '/test');
+        $app->path('test', function($request) use($app) {
+            $app->get(function($request) {
+                return 'GET';
+            });
+            $app->post(function($request) {
+                return 'POST';
+            });
+            $app->options(function($request) {
+                return 'OPTIONS';
+            });
+        });
+        $res = $app->run($req);
+        $this->assertEquals('OPTIONS', $res->content());
+        $this->assertEquals(false, $res->header('Allow'));
+    }
 }
+

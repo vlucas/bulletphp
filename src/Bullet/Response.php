@@ -14,6 +14,7 @@ class Response
 {
     protected $_status = 200;
     protected $_content;
+    protected $_cacheTime;
     protected $_encoding = "UTF-8";
     protected $_contentType = "text/html";
     protected $_protocol = "HTTP/1.1";
@@ -95,6 +96,42 @@ class Response
             return $this->_status;
         }
         $this->_status = $status;
+        return $this;
+    }
+
+
+    /**
+     * Set HTTP cache time
+     *
+     * @param mixed $time Boolean false, integer time, or string for strtotime
+     */
+    public function cache($time = null)
+    {
+        if(null === $time) {
+            return $this->_cacheTime;
+        }
+
+        if($time instanceof \DateTime) {
+            $time = $time->getTimestamp();
+        } elseif(is_string($time)) {
+            $time = strtotime($time);
+        } elseif(is_int($time)) {
+            // Given time not a timestamp, assume seconds to add to current time
+            if(strlen($time) < 10) {
+                $time = time() + $time;
+            }
+        }
+
+        if($time === false) {
+            // Explicit no cache
+            $this->header('Cache-Control', 'no-cache, no-store');
+        } else {
+            // Max-age is seconds from now
+            $this->header('Cache-Control', 'public, max-age=' . ($time - time()));
+            $this->header('Expires', gmdate("D, d M Y H:i:s", $time));
+        }
+
+        $this->_cacheTime = $time;
         return $this;
     }
 

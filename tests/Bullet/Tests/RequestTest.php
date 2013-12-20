@@ -163,5 +163,87 @@ class RequestTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals('OPTIONS', $res->content());
         $this->assertEquals(false, $res->header('Allow'));
     }
+
+    function testCacheHeaderFalse()
+    {
+        $app = new Bullet\App();
+        $req = new Bullet\Request('GET', '/cache');
+        $app->path('cache', function($request) use($app) {
+            $app->get(function($request) use($app) {
+                return $app->response(200, 'CONTENT')->cache(false);
+            });
+        });
+        $res = $app->run($req);
+        $this->assertEquals('CONTENT', $res->content());
+        $this->assertEquals('no-cache, no-store', $res->header('Cache-Control'));
+    }
+
+    function testCacheHeaderTime()
+    {
+        $app = new Bullet\App();
+        $req = new Bullet\Request('GET', '/cache');
+        $currentTime = time();
+        $cacheTime = strtotime('+1 hour', $currentTime);
+        $app->path('cache', function($request) use($app, $cacheTime) {
+            $app->get(function($request) use($app, $cacheTime) {
+                return $app->response(200, 'CONTENT')->cache($cacheTime);
+            });
+        });
+        $res = $app->run($req);
+        $this->assertEquals('CONTENT', $res->content());
+        $this->assertEquals('public, max-age=3600', $res->header('Cache-Control'));
+        $this->assertEquals(gmdate("D, d M Y H:i:s", $cacheTime), $res->header('Expires'));
+    }
+
+    function testCacheWithDateTimeObject()
+    {
+        $app = new Bullet\App();
+        $req = new Bullet\Request('GET', '/cache');
+        $currentTime = time();
+        $cacheTime = new \DateTime('+1 hour');
+        $app->path('cache', function($request) use($app, $cacheTime) {
+            $app->get(function($request) use($app, $cacheTime) {
+                return $app->response(200, 'CONTENT')->cache($cacheTime);
+            });
+        });
+        $res = $app->run($req);
+        $this->assertEquals('CONTENT', $res->content());
+        $this->assertEquals('public, max-age=3600', $res->header('Cache-Control'));
+        $this->assertEquals(gmdate("D, d M Y H:i:s", $cacheTime->getTimestamp()), $res->header('Expires'));
+    }
+
+    function testCacheWithString()
+    {
+        $app = new Bullet\App();
+        $req = new Bullet\Request('GET', '/cache');
+        $currentTime = time();
+        $cacheTime = '1 hour';
+        $app->path('cache', function($request) use($app, $cacheTime) {
+            $app->get(function($request) use($app, $cacheTime) {
+                return $app->response(200, 'CONTENT')->cache($cacheTime);
+            });
+        });
+        $res = $app->run($req);
+        $this->assertEquals('CONTENT', $res->content());
+        $this->assertEquals('public, max-age=3600', $res->header('Cache-Control'));
+        $this->assertEquals(gmdate("D, d M Y H:i:s", strtotime($cacheTime)), $res->header('Expires'));
+    }
+
+    function testCacheWithSeconds()
+    {
+        $app = new Bullet\App();
+        $req = new Bullet\Request('GET', '/cache');
+        $currentTime = time();
+        $cacheTime = 3600;
+        $app->path('cache', function($request) use($app, $cacheTime) {
+            $app->get(function($request) use($app, $cacheTime) {
+                return $app->response(200, 'CONTENT')->cache($cacheTime);
+            });
+        });
+        $res = $app->run($req);
+        $this->assertEquals('CONTENT', $res->content());
+        $this->assertEquals('public, max-age=3600', $res->header('Cache-Control'));
+        $this->assertEquals(gmdate("D, d M Y H:i:s", time()+$cacheTime), $res->header('Expires'));
+    }
 }
 

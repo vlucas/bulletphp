@@ -17,6 +17,7 @@ class App extends \Pimple
         'param' => array(),
         'method' => array(),
         'subdomain' => array(),
+        'domain' => array(),
         'format' => array(),
         'custom' => array()
     );
@@ -97,6 +98,7 @@ class App extends \Pimple
             'param' => array(),
             'method' => array(),
             'subdomain' => array(),
+            'domain' => array(),
             'format' => array(),
             'custom' => array()
         );
@@ -231,6 +233,14 @@ class App extends \Pimple
         $subdomain = strtolower($request->subdomain());
         if(isset($this->_callbacks['subdomain'][self::$_pathLevel][$subdomain])) {
             $cb = $this->_callbacks['subdomain'][self::$_pathLevel][$subdomain];
+            self::$_pathLevel++;
+            $res = call_user_func($cb, $request);
+        }
+
+        // Run 'domain' callbacks
+        $domain = str_replace('www.', '', strtolower($request->host()));
+        if(isset($this->_callbacks['domain'][self::$_pathLevel][$domain])) {
+            $cb = $this->_callbacks['domain'][self::$_pathLevel][$domain];
             self::$_pathLevel++;
             $res = call_user_func($cb, $request);
         }
@@ -453,6 +463,20 @@ class App extends \Pimple
     {
         foreach((array) $subdomains as $subdomain) {
             $this->_callbacks['subdomain'][self::$_pathLevel][strtolower($subdomain)] = $this->_prepClosure($callback);
+        }
+        return $this;
+    }
+
+    /**
+     * Handle specific domain
+     *
+     * @param string|array $domain Name of domain to use
+     * @param \Closure $callback Closure to execute to handle specified domain path
+     */
+    public function domain($domain, \Closure $callback)
+    {
+        foreach((array) $domain as $domain) {
+            $this->_callbacks['domain'][self::$_pathLevel][strtolower($domain)] = $this->_prepClosure($callback);
         }
         return $this;
     }

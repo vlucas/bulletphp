@@ -112,6 +112,11 @@ class App extends \Pimple
         }
         return $this;
     }
+    // Alias for 'path'
+    public function resource($path, \Closure $callback)
+    {
+        return $this->path($path, $callback);
+    }
 
     public function param($param, \Closure $callback)
     {

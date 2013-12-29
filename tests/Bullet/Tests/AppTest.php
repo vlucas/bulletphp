@@ -26,6 +26,17 @@ class AppTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals($collect, $expect);
     }
 
+    public function testSingleResourceGet()
+    {
+        $app = new Bullet\App();
+        $app->resource('test', function() {
+            return 'resource';
+        });
+
+        $res = $app->run('GET', '/test/');
+        $this->assertEquals('resource', $res->content());
+    }
+
     public function testMultiplePathsWithAray()
     {
         $app = new Bullet\App();

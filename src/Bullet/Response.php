@@ -324,13 +324,6 @@ class Response
     {
         if(isset($this->_contentType)) {
             header('Content-Type: '.$this->_contentType."; charset=".$this->_encoding);
-            /*
-            if(isset($this->_encoding)) {
-                header('Content-Type: '.$this->_contentType."; charset=".$this->_encoding);
-            } else {
-                header('Content-Type: '.$this->_contentType);
-            }
-            */
         }
 
         // Send all headers

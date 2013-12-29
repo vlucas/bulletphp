@@ -364,6 +364,11 @@ class App extends \Pimple
             }
         }
 
+        // Ensure no response body is sent for special status codes
+        if(in_array($res->status(), array(204, 205, 304))) {
+            $res->content('');
+        }
+
         // If this is the first response sent, store it
         if($this->_response === null) {
             $this->_response = $res;

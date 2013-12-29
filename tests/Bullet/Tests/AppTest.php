@@ -112,6 +112,20 @@ class AppTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals($expected, $actual->status());
     }
 
+    public function test204HasNoBodyContent()
+    {
+        $app = new Bullet\App();
+        $app->path('test-no-content', function($request) use($app) {
+            $app->get(function($request) {
+                return 204;
+            });
+        });
+
+        $res = $app->run('GET', '/test-no-content');
+        $this->assertEquals('', $res->content());
+        $this->assertEquals(204, $res->status());
+    }
+
     public function testDoublePathPostOnly()
     {
         $collect = array();
@@ -1009,7 +1023,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals(404, $result->status());
     }
 
-    public function testDefaultArrayToJSONContentConverterStillWorks()
+    public function testDefaultArrayToJSONContentConverter()
     {
         $app = new Bullet\App();
         $app->path('/', function($request) use($app) {

@@ -890,6 +890,22 @@ class AppTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals(json_encode($params), $result->content());
     }
 
+    public function testSupportsHeadAsGetWithNoResponseBody()
+    {
+        $app = new Bullet\App();
+        $app->path('someroute', function($request) use($app) {
+            $app->get(function($request) {
+                return 'I am hidden with a HEAD request!';
+            });
+        });
+
+        $request = new \Bullet\Request('HEAD', '/someroute');
+        $result = $app->run($request);
+
+        $this->assertEquals('HEAD', $request->method());
+        $this->assertEquals('', $result->content());
+    }
+
     public function testSubdomainRoute()
     {
         $app = new Bullet\App();

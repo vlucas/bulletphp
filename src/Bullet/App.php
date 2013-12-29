@@ -295,6 +295,11 @@ class App extends \Pimple
 
         // Run 'method' callbacks if the path is the full requested one
         if($this->isRequestPath() && isset($this->_callbacks['method'][self::$_pathLevel]) && count($this->_callbacks['method'][self::$_pathLevel]) > 0) {
+            // If this is a HEAD request and there is no HEAD handler, but there is a GET one, run as GET
+            if($method === 'HEAD' && !isset($this->_callbacks['method'][self::$_pathLevel]['HEAD']) && isset($this->_callbacks['method'][self::$_pathLevel]['GET'])) {
+                $method = 'GET';
+            }
+
             // If there are ANY method callbacks, use if matches method, return 405 if not
             // If NO method callbacks are present, path return value will be used, or 404
             if(isset($this->_callbacks['method'][self::$_pathLevel][$method])) {
@@ -364,8 +369,8 @@ class App extends \Pimple
             }
         }
 
-        // Ensure no response body is sent for special status codes
-        if(in_array($res->status(), array(204, 205, 304))) {
+        // Ensure no response body is sent for special status codes or for HEAD requests
+        if(in_array($res->status(), array(204, 205, 304)) || $this->request()->method() === 'HEAD') {
             $res->content('');
         }
 

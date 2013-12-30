@@ -212,7 +212,7 @@ class App extends \Pimple
         $this->response($response);
 
         // Trigger events based on HTTP request format and HTTP response code
-        $this->filter(array($this->_request->format(), $response->status(), 'after'));
+        $this->filter(array_filter(array($this->_request->format(), $response->status(), 'after')));
 
         return $response;
     }

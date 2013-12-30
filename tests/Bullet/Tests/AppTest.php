@@ -906,6 +906,25 @@ class AppTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals('', $result->content());
     }
 
+    public function testSupportsHeadWithHandler()
+    {
+        $app = new Bullet\App();
+        $app->path('test', function($request) use($app) {
+            $app->head(function($request) {
+                return $this->response()->header('X-Special', 'Stuff');
+            });
+            $app->get(function($request) {
+                return 'I am hidden with a HEAD request!';
+            });
+        });
+
+        $request = new \Bullet\Request('HEAD', '/test');
+        $response = $app->run($request);
+        $this->assertEquals('HEAD', $request->method());
+        $this->assertEquals('Stuff', $response->header('X-Special'));
+        $this->assertEquals('', $response->content());
+    }
+
     public function testSubdomainRoute()
     {
         $app = new Bullet\App();

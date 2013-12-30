@@ -910,8 +910,8 @@ class AppTest extends \PHPUnit_Framework_TestCase
     {
         $app = new Bullet\App();
         $app->path('test', function($request) use($app) {
-            $app->head(function($request) {
-                return $this->response()->header('X-Special', 'Stuff');
+            $app->head(function($request) use($app) {
+                return $app->response()->header('X-Special', 'Stuff');
             });
             $app->get(function($request) {
                 return 'I am hidden with a HEAD request!';

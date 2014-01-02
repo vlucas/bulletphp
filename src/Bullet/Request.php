@@ -130,8 +130,10 @@ class Request
             parse_str($raw, $params);
 
             // Check to ensure raw body was decoded correctly. If it wasn't, the whole raw string will be a key in the
-            // resulting array instead of something sensible, like... I dunno... boolean false, maybe? (f#*@&! php)
-            if(isset($params[$raw])) {
+            // resulting array instead of something sensible, like... I dunno... boolean false, maybe? (f#*@&! php).
+            // Additionally, parse_str will convert spaces and dots to underscores so we have to watch for that.
+            $raw_transformed = str_replace(array(" ", "."), "_", $raw);
+            if(isset($params[$raw_transformed])) {
                 $params = array();
                 $json = json_decode($raw, true);
                 if($json) {

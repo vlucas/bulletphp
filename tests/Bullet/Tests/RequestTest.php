@@ -115,6 +115,42 @@ class RequestTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals('bar', $r->post('foo'));
     }
 
+    function testRawJsonBodyWithSpacesInValueIsDecodedInPutRequest()
+    {
+        $r = new Bullet\Request('PUT', '/users/42.json', array(), array('Accept' => 'application/json'), '{"foo":"bar baz"}');
+        $this->assertEquals('bar baz', $r->foo);
+    }
+
+    function testRawJsonBodyWithSpacesInKeyIsDecodedInPutRequest()
+    {
+        $r = new Bullet\Request('PUT', '/users/42.json', array(), array('Accept' => 'application/json'), '{"foo bar":"baz"}');
+        $this->assertEquals('baz', $r->{'foo bar'});
+    }
+
+    function testRawJsonBodyWithSpacesInKeyAndValueIsDecodedInPutRequest()
+    {
+        $r = new Bullet\Request('PUT', '/users/42.json', array(), array('Accept' => 'application/json'), '{"foo bar":"bar baz"}');
+        $this->assertEquals('bar baz', $r->{'foo bar'});
+    }
+
+    function testRawJsonBodyWithDotsInValueIsDecodedInPutRequest()
+    {
+        $r = new Bullet\Request('PUT', '/users/42.json', array(), array('Accept' => 'application/json'), '{"link":"http://bulletphp.com/"}');
+        $this->assertEquals('http://bulletphp.com/', $r->link);
+    }
+
+    function testRawJsonBodyWithDotsInKeyIsDecodedInPutRequest()
+    {
+        $r = new Bullet\Request('PUT', '/users/42.json', array(), array('Accept' => 'application/json'), '{"the.link":"bulletphp"}');
+        $this->assertEquals('bulletphp', $r->{'the.link'});
+    }
+
+    function testRawJsonBodyWithDotsInKeyAndValueIsDecodedInPutRequest()
+    {
+        $r = new Bullet\Request('PUT', '/users/42.json', array(), array('Accept' => 'application/json'), '{"the.link":"http://bulletphp.com"}');
+        $this->assertEquals('http://bulletphp.com', $r->{'the.link'});
+    }
+
     function testSubdomainCapture()
     {
         $r = new Bullet\Request('GET', '/', array(), array('Host' => 'test.bulletphp.com'));

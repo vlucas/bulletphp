@@ -849,15 +849,29 @@ class Request
     public function isBot()
     {
         $ua =strtolower($this->server('HTTP_USER_AGENT'));
-        return (
-            false !== strpos($ua, 'googlebot') ||
-            false !== strpos($ua, 'msnbot') ||
-            false !== strpos($ua, 'yahoo!') ||
-            false !== strpos($ua, 'slurp') ||
-            false !== strpos($ua, 'bot') ||
-            false !== strpos($ua, 'spider')
+        $botList =array(
+            'googlebot',
+            'msnbot',
+            'yahoo',
+            'slurp',
+            'bot',
+            'spider',
+            'nutch',
+            'crawler',
+            'facebook',
+            'bing',
+            'siteanalyzer',
+            'dnsqueries',
+            'httpclient',
+            'indy library',
         );
-    }
+        foreach($botList as $bot){
+            if(false !== strpos($ua, $bot)){
+                return true;
+            }
+        }
+        return false;
+   }
 
 
     /**

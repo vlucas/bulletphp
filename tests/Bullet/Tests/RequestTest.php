@@ -151,6 +151,19 @@ class RequestTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals('http://bulletphp.com', $r->{'the.link'});
     }
 
+    function testRawJsonBodyIsDecodedWithBadJSON()
+    {
+        $r = new Bullet\Request('PUT', '/test', array(), array('Content-Type' => 'application/json'), '{\"title\":\"Updated New Post Title\",\"body\":\"<p>A much better post body</p>\"}\n');
+        $app = new Bullet\App();
+        $app->path('test', function($request) use($app) {
+            $app->put(function($request) {
+                return 'title: ' . $request->get('title');
+            });
+        });
+        $res = $app->run($r);
+        $this->assertEquals('title: Updated New Post Title', $res->content());
+    }
+
     function testSubdomainCapture()
     {
         $r = new Bullet\Request('GET', '/', array(), array('Host' => 'test.bulletphp.com'));

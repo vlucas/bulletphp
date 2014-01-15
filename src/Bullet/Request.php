@@ -127,17 +127,30 @@ class Request
         if($this->isPatch() || $this->isPut() || $this->isDelete() || ($this->isPost() && empty($_POST) && empty($this->_params))) {
             // Get and parse raw request body
             $raw = $this->raw();
-            parse_str($raw, $params);
 
-            // Check to ensure raw body was decoded correctly. If it wasn't, the whole raw string will be a key in the
-            // resulting array instead of something sensible, like... I dunno... boolean false, maybe? (f#*@&! php).
-            // Additionally, parse_str will convert spaces and dots to underscores so we have to watch for that.
-            $raw_transformed = str_replace(array(" ", "."), "_", $raw);
-            if(isset($params[$raw_transformed])) {
-                $params = array();
+            // Handle any JSON request
+            if(strpos($this->header('Content-Type'), 'json') !== false) {
+                // Cleanup bad JSON so we can parse it
+                $raw = stripslashes(str_replace(array('\r\n', '\n', '\r'), '', $raw));
                 $json = json_decode($raw, true);
                 if($json) {
                     $params = $json;
+                }
+
+            // Handle other requests (probably query params)
+            } else {
+                parse_str($raw, $params);
+
+                // Check to ensure raw body was decoded correctly. If it wasn't, the whole raw string will be a key in the
+                // resulting array instead of something sensible, like... I dunno... boolean false, maybe? (f#*@&! php).
+                // Additionally, parse_str will convert spaces and dots to underscores so we have to watch for that.
+                $raw_transformed = str_replace(array(" ", "."), "_", $raw);
+                if(isset($params[$raw_transformed])) {
+                    $params = array();
+                    $json = json_decode($raw, true);
+                    if($json !== false) {
+                        $params = $json;
+                    }
                 }
             }
 

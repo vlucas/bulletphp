@@ -5,9 +5,15 @@ language: php
 php:
   - 5.3
   - 5.4
+  - 5.5
+  - hhvm
 
 before_script:
-  - composer install
+  - composer install --no-interaction
 
 # Script to run tests
 script: phpunit
+
+matrix:
+  allow_failures:
+    - php: hhvm

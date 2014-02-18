@@ -139,7 +139,7 @@ class App extends \Pimple
     protected function _prepClosure(\Closure $closure)
     {
         // Bind local context for PHP >= 5.4
-        if (version_compare(PHP_VERSION, '5.4.0') >= 0) {
+        if (version_compare(PHP_VERSION, '5.4.0') >= 0 && !$this->request()->isHHVM()) {
             $closure = $closure->bindTo($this);
         }
         return $closure;
@@ -384,9 +384,14 @@ class App extends \Pimple
 
     /**
      * Get current request object
+     *
+     * @return \Bullet\Request
      */
     public function request()
     {
+        if($this->_request === null) {
+            $this->_request = new \Bullet\Request();
+        }
         return $this->_request;
     }
 

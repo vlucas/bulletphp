@@ -900,6 +900,17 @@ class Request
 
 
     /**
+     * Is the request from HHVM (HipHop)?
+     *
+     * @return boolean
+     */
+    public function isHHVM()
+    {
+        return defined('HHVM_VERSION');
+    }
+
+
+    /**
      * Is this a Flash request?
      * 
      * @return bool

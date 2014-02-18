@@ -1229,6 +1229,12 @@ class AppTest extends \PHPUnit_Framework_TestCase
     public function testPHP5_4ClosureBinding()
     {
         $app = new Bullet\App();
+
+        // Skip test for HHVM
+        if($app->request()->isHHVM()) {
+            $this->markTestSkipped('HHVM does not support Closure::bindTo');
+        }
+
         $app->path('php5_4', function($request) {
             return $this->url('/worked/');
         });

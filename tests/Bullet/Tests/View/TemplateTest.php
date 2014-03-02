@@ -145,4 +145,28 @@ class TemplateTest extends \PHPUnit_Framework_TestCase
         $tpl = new Template('exception');
         $this->assertContains('Exception thrown inside a template! Oh noes!', (string) $tpl);
     }
+
+    public function testTemplateDoesNotDoubleRender()
+    {
+        $app = new Bullet\App();
+        $app->path('renderCount', function($request) use($app) {
+            return $app->template('renderCount');
+        });
+        $res = $app->run('GET', '/renderCount/');
+
+        $this->assertEquals('1', $res->content());
+    }
+
+    public function testTemplateRenderCacheCanBeCleared()
+    {
+        $app = new Bullet\App();
+        $app->path('renderCount', function($request) use($app) {
+            $tpl = $app->template('renderCount');
+            $rendered = $tpl->content();
+            return $tpl->clearCachedContent();
+        });
+        $res = $app->run('GET', '/renderCount/');
+
+        $this->assertEquals('3', $res->content());
+    }
 }

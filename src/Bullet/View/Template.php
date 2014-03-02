@@ -26,6 +26,7 @@ class Template extends Response
     protected $_vars = array();
     protected $_path;
     protected $_layout;
+    protected $_templateContent;
     protected static $_layoutRendered = false;
     protected $_exists;
 
@@ -308,57 +309,73 @@ class Template extends Response
 
 
     /**
+     * Clear previously rendered and cached content
+     *
+     * @return self
+     */
+    public function clearCachedContent()
+    {
+        $this->_templateContent = null;
+        return $this;
+    }
+
+
+    /**
      * Read template file into content string and return it
      *
      * @return string
      */
     public function content($parsePHP = true)
     {
-        $this->exists(true);
+        if(!$this->_templateContent) {
+            $this->exists(true);
 
-        $vfile = $this->path() . $this->fileName();
+            $vfile = $this->path() . $this->fileName();
 
-        // Include() and parse PHP code
-        if($parsePHP) {
-            ob_start();
+            // Include() and parse PHP code
+            if($parsePHP) {
+                ob_start();
 
-            // Use closure to get isolated scope
-            $view = $this;
-            $vars = $this->vars();
-            $render = function($templateFile) use($view, $vars) {
-                extract($vars);
-                require $templateFile;
-                return ob_get_clean();
-            };
-            $templateContent = $render($vfile);
-        } else {
-            // Just get raw file contents
-            $templateContent = file_get_contents($vfile);
-        }
-        $templateContent = trim($templateContent);
-
-        // Wrap template content in layout
-        if($this->layout()) {
-            // Ensure layout doesn't get rendered recursively
-            self::$_config['auto_layout'] = false;
-
-            // New template for layout
-            $layout = new self($this->layout());
-
-            // Set layout path if specified
-            if(isset(self::$_config['path_layouts'])) {
-                $layout->path(self::$_config['path_layouts']);
+                // Use closure to get isolated scope
+                $view = $this;
+                $vars = $this->vars();
+                $render = function($templateFile) use($view, $vars) {
+                    extract($vars);
+                    require $templateFile;
+                    return ob_get_clean();
+                };
+                $templateContent = $render($vfile);
+            } else {
+                // Just get raw file contents
+                $templateContent = file_get_contents($vfile);
             }
-            // Pass all locally set variables to layout
-            $layout->set($this->_vars);
+            $templateContent = trim($templateContent);
 
-            // Set main yield content block
-            $layout->set('yield', $templateContent);
+            // Wrap template content in layout
+            if($this->layout()) {
+                // Ensure layout doesn't get rendered recursively
+                self::$_config['auto_layout'] = false;
 
-            // Get content
-            $templateContent = $layout->content($parsePHP);
+                // New template for layout
+                $layout = new self($this->layout());
+
+                // Set layout path if specified
+                if(isset(self::$_config['path_layouts'])) {
+                    $layout->path(self::$_config['path_layouts']);
+                }
+                // Pass all locally set variables to layout
+                $layout->set($this->_vars);
+
+                // Set main yield content block
+                $layout->set('yield', $templateContent);
+
+                // Get content
+                $templateContent = $layout->content($parsePHP);
+            }
+
+            $this->_templateContent = $templateContent;
         }
 
-        return $templateContent;
+        return $this->_templateContent;
     }
 }

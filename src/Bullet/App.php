@@ -250,17 +250,17 @@ class App extends \Pimple
             $res = call_user_func($cb, $request);
         }
 
+        // Return false for subdomain and domain by default
+        if($res === null) {
+            $res = false;
+        }
+
         // Run 'path' callbacks
         if(isset($this->_callbacks['path'][self::$_pathLevel][$path])) {
             $cb = $this->_callbacks['path'][self::$_pathLevel][$path];
             self::$_pathLevel++;
             $res = call_user_func($cb, $request);
             $pathMatched = true;
-
-            // Ensure no other paths are parsed after full match is made
-            if($this->isRequestPath()) {
-                $this->resetCallbacks('param');
-            }
         }
 
         // Run 'param' callbacks
@@ -306,7 +306,6 @@ class App extends \Pimple
                 $cb = $this->_callbacks['method'][self::$_pathLevel][$method];
                 self::$_pathLevel++;
                 $res = call_user_func($cb, $request);
-                $this->resetCallbacks(array('param', 'path'));
             } else {
                 $res = $this->response(405);
             }

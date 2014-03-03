@@ -1058,6 +1058,24 @@ class AppTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals(404, $result->status());
     }
 
+    public function testDomainRoute404OnRequestedDomain()
+    {
+        $app = new Bullet\App();
+        $app->domain('example.com', function($request) use($app) {
+            $app->path('/goodpath', function($request) use($app) {
+                $app->get(function($request) {
+                    return "GET " . $request->host();
+                });
+            });
+        });
+
+        $request = new \Bullet\Request('GET', '/badpath', array(), array('Host' => 'www.example.com'));
+        $result = $app->run($request);
+
+        $this->assertEquals(404, $result->status());
+        $this->assertEquals('Not Found', $result->content());
+    }
+
     public function testDefaultArrayToJSONContentConverter()
     {
         $app = new Bullet\App();

@@ -90,7 +90,7 @@ class Request
 
         // Set URL
         if($url !== null) {
-            $this->_url = $url;
+            $this->url($url);
         }
 
         // Set params if given
@@ -169,34 +169,41 @@ class Request
      *
      * @return string Requested URL path segement
      */
-    public function url()
+    public function url($url = null)
     {
         if(null === $this->_url) {
-            if($this->isCli()) {
-                // CLI request
-                $cliArgs = getopt("u:");
-
-                $requestUrl = isset($cliArgs['u']) ? $cliArgs['u'] : '/';
-                $qs = parse_url($requestUrl, PHP_URL_QUERY);
-                $cliRequestParams = array();
-                parse_str($qs, $cliRequestParams);
-
-                // Set parsed query params back on request object
-                $this->setParams($cliRequestParams);
-
-                // Set requestUrl and remove query string if present so router can parse it as expected
-                if($qsPos = strpos($requestUrl, '?')) {
-                    $requestUrl = substr($requestUrl, 0, $qsPos);
-                }
-
+            if(null !== $url) {
+                // SET url with what's given
+                $requestUrl = $url;
             } else {
-                // HTTP request
-                if($url = $this->query('u')) {
-                    $requestUrl = $url;
+                // AUTO-DETECT url
+                if($this->isCli()) {
+                    // CLI request
+                    $cliArgs = getopt("u:");
+
+                    $requestUrl = isset($cliArgs['u']) ? $cliArgs['u'] : '/';
+                    $qs = parse_url($requestUrl, PHP_URL_QUERY);
+                    $cliRequestParams = array();
+                    parse_str($qs, $cliRequestParams);
+
+                    // Set parsed query params back on request object
+                    $this->setParams($cliRequestParams);
+
                 } else {
-                    $requestUrl = $this->uri();
+                    // HTTP request
+                    if($url = $this->query('u')) {
+                        $requestUrl = $url;
+                    } else {
+                        $requestUrl = $this->uri();
+                    }
                 }
             }
+
+            // Set requestUrl and remove query string if present so router can parse it as expected
+            if($qsPos = strpos($requestUrl, '?')) {
+                $requestUrl = substr($requestUrl, 0, $qsPos);
+            }
+
             $this->_url = $requestUrl;
         }
 

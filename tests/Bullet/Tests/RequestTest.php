@@ -294,5 +294,18 @@ class RequestTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals('public, max-age=3600', $res->header('Cache-Control'));
         $this->assertEquals(gmdate("D, d M Y H:i:s", time()+$cacheTime), $res->header('Expires'));
     }
+
+    function testGetWithQueryString()
+    {
+        $app = new Bullet\App();
+        $app->path('test', function($request) use($app) {
+            $app->get(function($request) {
+                return $request->foo;
+            });
+        });
+        $req = new Bullet\Request('GET', '/test?foo=bar');
+        $res = $app->run($req);
+        $this->assertEquals('bar', $res->content());
+    }
 }
 

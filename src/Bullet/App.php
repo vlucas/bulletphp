@@ -307,7 +307,8 @@ class App extends \Pimple
                 self::$_pathLevel++;
                 $res = call_user_func($cb, $request);
             } else {
-                $res = $this->response(405);
+                $acceptMethods = array_keys($this->_callbacks['method'][self::$_pathLevel]);
+                $res = $this->response(405)->header('Allow', implode(',', $acceptMethods));
             }
         } else {
             // Empty out collected method callbacks

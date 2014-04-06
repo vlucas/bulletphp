@@ -443,6 +443,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
 
         $response = $app->run('PUT', 'methodnotallowed');
         $this->assertEquals(405, $response->status());
+        $this->assertEquals('GET,POST', $response->header('Allow'));
     }
 
     public function testPathParamCaptureFirst()

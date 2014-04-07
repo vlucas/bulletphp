@@ -300,12 +300,19 @@ class RequestTest extends \PHPUnit_Framework_TestCase
         $app = new Bullet\App();
         $app->path('test', function($request) use($app) {
             $app->get(function($request) {
-                return $request->foo;
+                return 'foo=' . $request->foo;
             });
         });
         $req = new Bullet\Request('GET', '/test?foo=bar');
         $res = $app->run($req);
-        $this->assertEquals('bar', $res->content());
+        $this->assertEquals('foo=bar', $res->content());
+    }
+
+    public function testRequestsDoNotShareParams()
+    {
+        $first_request  = new Bullet\Request('GET', '/', array('foo' => 'bar'));
+        $second_request = new Bullet\Request('GET', '/', array());
+        $this->assertNull($second_request->foo);
     }
 }
 

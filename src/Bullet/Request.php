@@ -80,8 +80,8 @@ class Request
             array_walk_recursive($_REQUEST, $stripslashes_gpc);
         }
 
-        $this->_postParams =& $_POST;
-        $this->_queryParams =& $_GET;
+        $this->_postParams = $_POST;
+        $this->_queryParams = $_GET;
 
         // Set Method
         if($method !== null) {
@@ -156,7 +156,14 @@ class Request
 
             // Set params if any decoding was successful
             if($params) {
-                $this->setParams($params);
+                // Real POST and GET params take precidence over raw body
+                if($method === 'POST') {
+                    $this->_postParams = array_merge($params, $this->_postParams);
+                } elseif($method === 'GET') {
+                    $this->_queryParams = array_merge($params, $this->_queryParams);
+                } else {
+                    $this->setParams($params);
+                }
             }
         }
     }
@@ -201,7 +208,11 @@ class Request
 
             // Set requestUrl and remove query string if present so router can parse it as expected
             if($qsPos = strpos($requestUrl, '?')) {
+                $fullUrl = $requestUrl;
                 $requestUrl = substr($requestUrl, 0, $qsPos);
+                parse_str(substr($fullUrl, $qsPos+1), $urlRequestParams);
+                // Set parsed query params back on request object
+                $this->setParams($urlRequestParams);
             }
 
             $this->_url = $requestUrl;

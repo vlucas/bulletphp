@@ -139,7 +139,7 @@ class App extends \Pimple
     protected function _prepClosure(\Closure $closure)
     {
         // Bind local context for PHP >= 5.4
-        if (version_compare(PHP_VERSION, '5.4.0') >= 0 && !$this->request()->isHHVM()) {
+        if (version_compare(PHP_VERSION, '5.4.0') >= 0 && !defined('HHVM_VERSION')) {
             $closure = $closure->bindTo($this);
         }
         return $closure;

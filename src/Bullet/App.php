@@ -206,6 +206,7 @@ class App extends \Pimple
         }
 
         // Perform last minute operations on our response
+        $this->filter('beforeResponseHandler', array($response));
         $response = $this->_handleResponse($response);
 
         // Set current outgoing response

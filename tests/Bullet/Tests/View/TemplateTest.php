@@ -169,4 +169,21 @@ class TemplateTest extends \PHPUnit_Framework_TestCase
 
         $this->assertEquals('3', $res->content());
     }
+
+    public function testEventBeforeResponseHandler()
+    {
+        Template::config(array('path_layouts' => $this->templateDir . 'layouts/'));
+
+        $app = new Bullet\App();
+        $app->path('variableSet', function($request) use($app) {
+            return $app->template('variableSet', array('variable' => 'one'))
+                ->layout('div');
+        });
+        $app->on('beforeResponseHandler', function(\Bullet\Request $request, \Bullet\Response $response, $rawResponse) use($app) {
+            $rawResponse->set('variable', 'two')->layout(false);
+        });
+        $res = $app->run('GET', '/variableSet/');
+
+        $this->assertEquals('two', $res->content());
+    }
 }

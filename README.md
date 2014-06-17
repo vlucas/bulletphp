@@ -226,9 +226,9 @@ callbacks, as well as other paths, more parameters, etc.
     // Results of above code
     echo $app->run('GET',   '/posts/42'); // 'view_42'
     echo $app->run('PUT',   '/posts/42'); // 'update_42'
-    echo $app->run('DELTE', '/posts/42'); // 'delete_42'
+    echo $app->run('DELETE', '/posts/42'); // 'delete_42'
 
-    echo $app->run('DELTE', '/posts/my-post-title'); // 'my-post-title'
+    echo $app->run('DELETE', '/posts/my-post-title'); // 'my-post-title'
 
 
 Returning JSON (Useful for PHP JSON APIs)

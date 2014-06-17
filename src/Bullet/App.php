@@ -10,7 +10,7 @@ class App extends \Pimple
     protected static $_pathLevel = 0;
     protected $_requestMethod;
     protected $_requestPath;
-    protected $_curentPath;
+    protected $_currentPath;
     protected $_paramTypes = array();
     protected $_callbacks = array(
         'path' => array(),

@@ -159,10 +159,9 @@ class App extends \Pimple
 
         // If Request instance was passed in as the first parameter
         if($method instanceof \Bullet\Request) {
-            $request = $method;
-            $this->_request = $request;
-        // Create new Request object from passed method and URI
+            $this->_request = $method;
         } else {
+            // Create new Request object from passed method and URI
             $this->_request = new \Bullet\Request($method, $uri);
         }
         $this->_requestMethod = strtoupper($this->_request->method());
@@ -182,7 +181,7 @@ class App extends \Pimple
 
         // Run before filter
         $this->filter('before');
-
+        
         // Explode by path without leading or trailing slashes
         $paths = explode('/', $this->_requestPath);
         foreach($paths as $pos => $path) {
@@ -190,27 +189,29 @@ class App extends \Pimple
 
             // Run and get result
             try {
-                $response = $this->_runPath($this->_requestMethod, $path);
+                $content = $this->_runPath($this->_requestMethod, $path);
             } catch(\Exception $e) {
-                // Always trigger base 'Exception', plus actual exception class
-                $events = array_unique(array('Exception', get_class($e)));
-
-                // Default status is 500 and content is Exception object
+                // Setup the response object with status 500 and exception detail as content
                 $this->response()->status(500)->content($e);
-
-                // Run filters and assign response
+                
+                // Run filters (always trigger base 'Exception', plus actual exception class)
+                $events = array_unique(array('Exception', get_class($e)));
                 $this->filter($events, array($e));
-                $response = $this->response();
+                $content = $this->response();
                 break;
             }
         }
+        $response = $this->response($content);
 
         // Perform last minute operations on our response
         $this->filter('beforeResponseHandler', array($response));
-        $response = $this->_handleResponse($response);
-
-        // Set current outgoing response
-        $this->response($response);
+        // Apply user defined response handlers
+        foreach($this->_responseHandlers as $handler) {
+            //Applies any with a null condition or whose condition evaluates to true.
+            if(null === $handler['condition'] || call_user_func($handler['condition'], $response)) {
+                call_user_func($handler['handler'], $response);
+            }
+        }
 
         // Trigger events based on HTTP request format and HTTP response code
         $this->filter(array_filter(array($this->_request->format(), $response->status(), 'after')));
@@ -345,44 +346,65 @@ class App extends \Pimple
     }
 
     /**
-     * Send HTTP response with status code and content
+     * Get/Set current response object
      */
-    public function response($statusCode = null, $content = null)
+    public function response()
     {
-        $res = null;
-
-        // Get current response (passed nothing)
-        if($statusCode === null) {
-            $res = $this->_response;
-
-        // Set response
-        } elseif($statusCode instanceof \Bullet\Response) {
-            $res = $this->_response = $statusCode;
+        //setter
+        if(func_num_args()==2){
+            //2 args setter
+            list($statusCode, $content) = func_get_args();
+            $this->_response = $this->responseFactory($content, $statusCode);
         }
-
-        // Create new response if none is going to be returned
-        if($res === null) {
-            $res = new \Bullet\Response($content, $statusCode);
-
-            // If content not set, use default HTTP
-            if($content === null) {
-                $res->content($res->statusText($statusCode));
+        if(func_num_args()==1){
+            //1 argument setter
+            $response = func_get_arg(0);
+            $this->_response = $this->responseFactory($response);
+        }
+        //getter
+        if( $this->_response===null ){
+            $this->_response = $this->responseFactory();
+        }
+        return $this->_response;
+    }
+    
+    /**
+     * Create a response with status code and content
+     *
+     * @return \Bullet\Request
+     */
+    protected function responseFactory($content=null, $statusCode=null)
+    {
+        $response = $content;
+        if( $statusCode===null ){
+            // Ensure response is always a Bullet\Response
+            if($content === false) {
+                // Boolean false result generates a 404
+                $response = new \Bullet\Response(null, 404);
+                $response->content($response->statusText(404));
+            } elseif(is_int($content)) {
+                // Assume int response is desired HTTP status code
+                $response = new \Bullet\Response(null, $content);
+                $response->content($response->statusText($content));
+            } 
+            // Convert response to Bullet\Response object if not one already
+            if(!($response instanceof \Bullet\Response)) {
+                $response = new \Bullet\Response($content, 200);
             }
+        } elseif(! ($content instanceof \Bullet\Response) ){
+            $response = new \Bullet\Response($content, $statusCode);
         }
 
         // Ensure no response body is sent for special status codes or for HEAD requests
-        if(in_array($res->status(), array(204, 205, 304)) || $this->request()->method() === 'HEAD') {
-            $res->content('');
+        if(in_array($response->status(), array(204, 205, 304)) 
+            || $this->request()->method() === 'HEAD'
+        ) {
+            $response->content('');
         }
 
-        // If this is the first response sent, store it
-        if($this->_response === null) {
-            $this->_response = $res;
-        }
-
-        return $res;
+        return $response;
     }
-
+    
     /**
      * Get current request object
      *
@@ -645,6 +667,7 @@ class App extends \Pimple
      */
     public function filter($event, array $args = array())
     {
+        if( empty($event) ) return;
         $request = $this->request();
         $response = $this->response();
 
@@ -653,7 +676,8 @@ class App extends \Pimple
             $eventName = $this->eventName($eventName);
             if(isset($this->_callbacks['events'][$eventName])) {
                 foreach($this->_callbacks['events'][$eventName] as $handler) {
-                    call_user_func_array($handler, array_merge(array($request, $response), $args));
+                    $parms = array_merge(array($request, $response), $args);
+                    call_user_func_array($handler, $parms);
                 }
             }
         }
@@ -761,40 +785,4 @@ class App extends \Pimple
         return $this;
     }
 
-    /**
-     * Modify response to prepare it for returning.
-     *
-     * Applies special logic for particular response types and ensure response
-     * is a \Bullet\Response object.
-     *
-     * Loops through registered response handlers and applies any with a null
-     * condition or whose condition evaluates to true.
-     *
-     * @param mixed $response The response to act upon.
-     */
-    protected function _handleResponse($response)
-    {
-        // Ensure response is always a Bullet\Response
-        if($response === false) {
-            // Boolean false result generates a 404
-            $response = $this->response(404);
-        } elseif(is_int($response)) {
-            // Assume int response is desired HTTP status code
-            $response = $this->response($response);
-        } else {
-            // Convert response to Bullet\Response object if not one already
-            if(!($response instanceof \Bullet\Response)) {
-                $response = $this->response(200, $response);
-            }
-        }
-
-        // Apply user defined response handlers
-        foreach($this->_responseHandlers as $handler) {
-            if(null === $handler['condition'] || call_user_func($handler['condition'], $response)) {
-                call_user_func($handler['handler'], $response);
-            }
-        }
-
-        return $response;
-    }
 }

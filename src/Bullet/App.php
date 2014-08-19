@@ -371,7 +371,7 @@ class App extends \Pimple
     /**
      * Create a response with status code and content
      *
-     * @return \Bullet\Request
+     * @return \Bullet\Response
      */
     protected function responseFactory($content=null, $statusCode=null)
     {

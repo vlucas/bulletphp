@@ -1,7 +1,9 @@
 <?php
 namespace Bullet;
 
-class App extends \Pimple
+use Pimple\Container;
+
+class App extends Container
 {
     protected $_request;
     protected $_response;

@@ -246,7 +246,7 @@ class App extends Container
         }
 
         // Run 'domain' callbacks
-        $domain = str_replace('www.', '', strtolower($request->host()));
+        $domain = preg_replace('~^www\.~', '', strtolower($request->host()));
         if(isset($this->_callbacks['domain'][self::$_pathLevel][$domain])) {
             $cb = $this->_callbacks['domain'][self::$_pathLevel][$domain];
             self::$_pathLevel++;

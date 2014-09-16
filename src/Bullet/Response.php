@@ -40,12 +40,14 @@ class Response
 
 
     /**
-     * Set HTTP header
+     * Set or get HTTP header
      *
      * @param string $type HTTP header type
      * @param string $content header content/value
+     * @param boolean $replace Whether to replace existing headers
+     * @return mixed
      */
-    public function header($type, $content = null)
+    public function header($type, $content = null, $replace = true)
     {
         if($content === null) {
             if(isset($this->_headers[$type])) {
@@ -67,12 +69,40 @@ class Response
             } else {
                 $this->_contentType = $content;
             }
-        } else {
+            return $this;
+        }
+
+        if ($replace) {
             $this->_headers[$type] = $content;
+        } else {
+            $this->appendHeader($type, $content);
         }
         return $this;
     }
 
+    /**
+     * Append a header to the list of headers with the same name.
+     *
+     * @param string $type HTTP header type
+     * @param string $content Header content/value
+     * @return \Bullet\Response
+     */
+    protected function appendHeader($type, $content)
+    {
+        // If the header hasn't already been set, make it an array at the start.
+        if(!isset($this->_headers[$type])) {
+            $this->_headers[$type] = array($content);
+            return $this;
+        }
+
+        // If the header isn't already an array of content values, turn it into
+        // an array.
+        if(!is_array($this->_headers[$type])) {
+            $this->_headers[$type] = array($this->_headers[$type]);
+        }
+        $this->_headers[$type][] = $content;
+        return $this;
+    }
 
     /**
      * Get array of all HTTP headers
@@ -328,9 +358,17 @@ class Response
 
         // Send all headers
         foreach($this->_headers as $key => $value) {
-            if(!is_null($value)) {
-                header($key . ": " . $value);
+            if(is_null($value)) {
+                continue;
             }
+            if(is_array($value)) {
+                foreach($value as $content) {
+                    header($key . ': ' . $content, false);
+                }
+                continue;
+            }
+
+            header($key . ": " . $value);
         }
     }
 

@@ -66,4 +66,25 @@ class ResponseTest extends \PHPUnit_Framework_TestCase
             $this->response->headers()
         );
     }
+
+    /**
+     * Test that adding the same header twice replaces the original value with
+     * the replace switch set to false allows adding multiple headers with the
+     * same name.
+     * @test
+     */
+    public function testAddHeaderWithoutReplacing()
+    {
+        $this->response->header('Link', 'http://foo.com');
+        $this->response->header('Link', 'http://bar.com', false);
+        $this->assertEquals(
+            array(
+                'Link' => array(
+                    'http://foo.com',
+                    'http://bar.com',
+                ),
+            ),
+            $this->response->headers()
+        );
+    }
 }

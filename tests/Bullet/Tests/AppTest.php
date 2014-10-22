@@ -618,7 +618,6 @@ class AppTest extends \PHPUnit_Framework_TestCase
     {
         $app = new Bullet\App();
         $app->path('test', function($request) use($app) {
-            $collect[] = 'test';
             $app->path('foo', function() use($app) {
                 $app->format('json', function() use($app) {
                     return array('foo' => 'bar', 'bar' => 'baz');
@@ -630,8 +629,8 @@ class AppTest extends \PHPUnit_Framework_TestCase
         });
 
         $response = $app->run('GET', '/test/foo.xml');
-        $this->assertEquals(406, $response->status());
         $this->assertEquals('Not Acceptable', $response->content());
+        $this->assertEquals(406, $response->status());
     }
 
     public function testFormatHanldersRunUsingAcceptHeader()

@@ -15,7 +15,7 @@ class Request
     // Request URL
     protected $_method;
     protected $_url;
-    protected $_format = 'html';
+    protected $_format = null;
 
     // Request parameters
     protected $_headers = array();
@@ -120,7 +120,8 @@ class Request
         if(!empty($accept)) {
             // Use first 'accept' type as the default format
             $firstType = array_shift($accept);
-            $this->format($firstType);
+            $formatAny = in_array($firstType, array(null, '*/*', '', '*'), true);
+            $this->format($formatAny ? null : $firstType);
         }
 
         // Properly handle PATCH, PUT, and DELETE requests, and POST requests with no params but post bodies

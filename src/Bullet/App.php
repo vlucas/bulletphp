@@ -320,11 +320,25 @@ class App extends Container
 
         // Run 'format' callbacks if the path is the full one AND the requested format matches a callback
         $format = $this->_request->format();
+        $accept = $this->_request->accept();
+        $acceptAny = is_array($accept) ? count(array_intersect($accept, array(null, '*/*', '', '*'))) !== 0 : false;
         if($this->isRequestPath() && isset($this->_callbacks['format'][self::$_pathLevel]) && count($this->_callbacks['format'][self::$_pathLevel]) > 0) {
             // If there are ANY format callbacks, use if matches format, return 406 if not
             // If NO method callbacks are present, path return value will be used, or 404
-            if(isset($this->_callbacks['format'][self::$_pathLevel][$format])) {
+            $cb = null;
+            if (isset($this->_callbacks['format'][self::$_pathLevel][$format])) {
                 $cb = $this->_callbacks['format'][self::$_pathLevel][$format];
+            } elseif (!empty($format)) {
+                return $res = $this->response(406);
+            }
+
+            // Use first defined format if Accept is not present or is wildcard (any/all)
+            if ($cb === null && (empty($accept) || $acceptAny)) {
+                $cb = current($this->_callbacks['format'][self::$_pathLevel]);
+            }
+
+            // Response
+            if ($cb !== null) {
                 self::$_pathLevel++;
                 $res = call_user_func($cb, $request);
             } else {

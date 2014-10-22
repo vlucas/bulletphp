@@ -22,10 +22,10 @@ class RequestTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals('/foo/bar/', $r->url());
     }
 
-    function testFormatDefaultsToHtml()
+    function testFormatDefaultsToNull()
     {
         $r = new Bullet\Request('DELETE', '/foo/bar/');
-        $this->assertEquals('html', $r->format());
+        $this->assertEquals(null, $r->format());
     }
 
     function testExtensionOverridesAcceptHeader()
@@ -71,6 +71,40 @@ class RequestTest extends \PHPUnit_Framework_TestCase
         });
         $res = $app->run($req);
         $this->assertEquals('json', $req->format());
+        $this->assertEquals('{"foo":"bar"}', $res->content());
+        $this->assertEquals('application/json', $res->contentType());
+    }
+
+    function testAcceptAnyReturnsFirstFormat()
+    {
+        $app = new Bullet\App();
+        // Accept only JSON and request URL with no extension
+        $req = new Bullet\Request('GET', '/foo', array(), array('Accept' => '*/*'));
+        $app->path('foo', function($request) use($app) {
+            $app->format('json', function($request) {
+                return array('foo' => 'bar');
+            });
+            $app->format('html', function($request) {
+                return '<html></html>';
+            });
+        });
+        $res = $app->run($req);
+        $this->assertEquals(null, $req->format());
+        $this->assertEquals('{"foo":"bar"}', $res->content());
+        $this->assertEquals('application/json', $res->contentType());
+    }
+
+    function testAcceptEmptyReturnsFirstFormat()
+    {
+        $app = new Bullet\App();
+        // Accept only JSON and request URL with no extension
+        $req = new Bullet\Request('GET', '/foo', array());
+        $app->path('foo', function($request) use($app) {
+            $app->format('json', function($request) {
+                return array('foo' => 'bar');
+            });
+        });
+        $res = $app->run($req);
         $this->assertEquals('{"foo":"bar"}', $res->content());
         $this->assertEquals('application/json', $res->contentType());
     }

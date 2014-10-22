@@ -123,7 +123,7 @@ Syntax
 
 Bullet is not your typical PHP micro framework. Instead of defining a full
 path pattern or a typical URL route with a callback and parameters mapped
-to a REST method (GET, POST, etc.), Bullet parses only ONE URL segement
+to a REST method (GET, POST, etc.), Bullet parses only ONE URL segment
 at a time, and only has two methods for working with paths: `path` and
 `param`. As you may have guessed, `path` is for static path names like
 "blog" or "events" that won't change, and `param` is for variable path

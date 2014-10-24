@@ -171,7 +171,7 @@ class App extends Container
         $this->_requestPath = $this->_request->url();
 
         // Detect extension and assign it as the requested format (default is 'html')
-        $dotPos = strpos($this->_requestPath, '.');
+        $dotPos = strrpos($this->_requestPath, '.');
         if($dotPos !== false) {
             $ext = substr($this->_requestPath, $dotPos+1);
             $this->_request->format($ext);

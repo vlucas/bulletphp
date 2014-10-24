@@ -536,7 +536,7 @@ class Request
         }
 
         // Detect extension and assign it as the requested format (overrides 'Accept' header)
-        $dotPos = strpos($this->url(), '.');
+        $dotPos = strrpos($this->url(), '.');
         if($dotPos !== false) {
             $ext = substr($this->url(), $dotPos+1);
             $this->_format = $ext;

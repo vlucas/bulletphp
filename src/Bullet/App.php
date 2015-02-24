@@ -59,7 +59,8 @@ class App extends Container
             function($response) {
                 $response->contentType('application/json');
                 $response->content(json_encode($response->content()));
-            }
+            },
+            'array-content'
         );
 
         // Pimple constructor
@@ -757,10 +758,11 @@ class App extends Container
      *
      * @param callable $condtion Function name or closure to test against response
      * @param callable $handler Function name or closure to modify response
+     * @param string $name Unique label for the new handler
      *
      * @returns \Bullet\App
      */
-    public function registerResponseHandler($condition, $handler)
+    public function registerResponseHandler($condition, $handler, $name = '')
     {
         if(null !== $condition && !is_callable($condition)) {
             throw new \InvalidArgumentException("First argument to " . __METHOD__ . " must be a valid callback or NULL. Given argument was neither.");
@@ -769,10 +771,16 @@ class App extends Container
             throw new \InvalidArgumentException("Second argument to " . __METHOD__ . " must be a valid callback. Given argument was not callable.");
         }
 
-        $this->_responseHandlers[] = array(
+        $handler = array(
             'condition' => $condition,
             'handler'   => $handler
         );
+
+        if (!$name) {
+            $this->_responseHandlers[] = $handler;
+        } else {
+            $this->_responseHandlers[$name] = $handler;
+        }
 
         return $this;
     }

@@ -1169,6 +1169,31 @@ class AppTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals('abc', $result->content());
     }
 
+    public function testThatUserResponseHandlersOverrideDefaults()
+    {
+        $app = new Bullet\App();
+        $app->path('/', function($request) use($app) {
+            return ['a'];
+        });
+
+        $app->registerResponseHandler(
+            function($response) {
+                return is_array($response->content());
+            },
+            function($response) {
+                $response->contentType('text/plain');
+                $response->content('this is not json');
+            },
+            'array-content'
+        );
+
+        $request = new \Bullet\Request('GET', '/');
+        $result = $app->run($request);
+
+        $this->assertEquals('this is not json', $result->content());
+        $this->assertEquals('text/plain', $result->contentType());
+    }
+
     public function testNestedRoutesInsideParamCallback()
     {
         $app = new Bullet\App();

@@ -1194,6 +1194,20 @@ class AppTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals('text/plain', $result->contentType());
     }
 
+    /**
+     * @expectedException InvalidArgumentException
+     * @expectedExceptionMessage Third argument to Bullet\App::registerResponseHandler must be a string. Given argument was not a string.
+     */
+    public function testThatResponseHandlerNamesMustBeAString()
+    {
+        $app = new Bullet\App();
+        $app->registerResponseHandler(
+            function($response) { return true; },
+            function($response) {},
+            123
+        );
+    }
+
     public function testNestedRoutesInsideParamCallback()
     {
         $app = new Bullet\App();

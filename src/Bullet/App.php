@@ -770,6 +770,9 @@ class App extends Container
         if(!is_callable($handler)) {
             throw new \InvalidArgumentException("Second argument to " . __METHOD__ . " must be a valid callback. Given argument was not callable.");
         }
+        if ($name && !is_string($name)) {
+            throw new \InvalidArgumentException("Third argument to " . __METHOD__ . " must be a string. Given argument was not a string.");
+        }
 
         $handler = array(
             'condition' => $condition,

@@ -1173,7 +1173,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
     {
         $app = new Bullet\App();
         $app->path('/', function($request) use($app) {
-            return ['a'];
+            return array('a');
         });
 
         $app->registerResponseHandler(
@@ -1212,7 +1212,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
     {
         $app = new Bullet\App();
         $app->path('/', function($request) use($app) {
-            return ['a'];
+            return array('a');
         });
 
         $app->removeResponseHandler('array-content');
@@ -1220,7 +1220,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
         $request = new \Bullet\Request('GET', '/');
         $result = $app->run($request);
 
-        $this->assertEquals(['a'], $result->content());
+        $this->assertEquals(array('a'), $result->content());
     }
 
     public function testThatUserResponseHandlersMayBeRemoved()

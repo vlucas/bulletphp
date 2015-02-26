@@ -789,6 +789,17 @@ class App extends Container
     }
 
     /**
+     * Remove a previously-registered response handler
+     *
+     * @param mixed $name Response handler name or index
+     */
+    public function removeResponseHandler($name) {
+        if (isset($this->_responseHandlers[$name])) {
+            unset($this->_responseHandlers[$name]);
+        }
+    }
+
+    /**
      * Modify response to prepare it for returning.
      *
      * Applies special logic for particular response types and ensure response

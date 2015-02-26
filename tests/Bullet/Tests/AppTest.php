@@ -1208,6 +1208,68 @@ class AppTest extends \PHPUnit_Framework_TestCase
         );
     }
 
+    public function testThatDefaultResponseHandlerMayBeRemoved()
+    {
+        $app = new Bullet\App();
+        $app->path('/', function($request) use($app) {
+            return ['a'];
+        });
+
+        $app->removeResponseHandler('array-content');
+
+        $request = new \Bullet\Request('GET', '/');
+        $result = $app->run($request);
+
+        $this->assertEquals(['a'], $result->content());
+    }
+
+    public function testThatUserResponseHandlersMayBeRemoved()
+    {
+        $app = new Bullet\App();
+        $app->path('/', function($request) use($app) {
+            return 'foo';
+        });
+        $request = new \Bullet\Request('GET', '/');
+
+        $app->registerResponseHandler(
+            function() { return true; },
+            function($response) {
+                $response->content('bar');
+            },
+            'foo'
+        );
+
+        $result = $app->run($request);
+        $this->assertEquals('bar', $result->content());
+
+        $app->removeResponseHandler('foo');
+        $result = $app->run($request);
+        $this->assertEquals('foo', $result->content());
+    }
+
+    public function testThatIndexedResponseHandlersMayBeRemoved()
+    {
+        $app = new Bullet\App();
+        $app->path('/', function($request) use($app) {
+            return 'foo';
+        });
+        $request = new \Bullet\Request('GET', '/');
+
+        $app->registerResponseHandler(
+            function() { return true; },
+            function($response) {
+                $response->content('bar');
+            }
+        );
+
+        $result = $app->run($request);
+        $this->assertEquals('bar', $result->content());
+
+        $app->removeResponseHandler(0);
+        $result = $app->run($request);
+        $this->assertEquals('foo', $result->content());
+    }
+
     public function testNestedRoutesInsideParamCallback()
     {
         $app = new Bullet\App();

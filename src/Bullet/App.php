@@ -762,7 +762,7 @@ class App extends Container
      *
      * @returns \Bullet\App
      */
-    public function registerResponseHandler($condition, $handler, $name = '')
+    public function registerResponseHandler($condition, $handler, $name = null)
     {
         if(null !== $condition && !is_callable($condition)) {
             throw new \InvalidArgumentException("First argument to " . __METHOD__ . " must be a valid callback or NULL. Given argument was neither.");

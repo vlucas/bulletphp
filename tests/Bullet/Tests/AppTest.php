@@ -1184,7 +1184,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
                 $response->contentType('text/plain');
                 $response->content('this is not json');
             },
-            'array-content'
+            'array_json'
         );
 
         $request = new \Bullet\Request('GET', '/');
@@ -1215,7 +1215,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
             return array('a');
         });
 
-        $app->removeResponseHandler('array-content');
+        $app->removeResponseHandler('array_json');
 
         $request = new \Bullet\Request('GET', '/');
         $result = $app->run($request);

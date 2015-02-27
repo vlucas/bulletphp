@@ -60,7 +60,7 @@ class App extends Container
                 $response->contentType('application/json');
                 $response->content(json_encode($response->content()));
             },
-            'array-content'
+            'array_json'
         );
 
         // Pimple constructor

@@ -1169,6 +1169,107 @@ class AppTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals('abc', $result->content());
     }
 
+    public function testThatUserResponseHandlersOverrideDefaults()
+    {
+        $app = new Bullet\App();
+        $app->path('/', function($request) use($app) {
+            return array('a');
+        });
+
+        $app->registerResponseHandler(
+            function($response) {
+                return is_array($response->content());
+            },
+            function($response) {
+                $response->contentType('text/plain');
+                $response->content('this is not json');
+            },
+            'array_json'
+        );
+
+        $request = new \Bullet\Request('GET', '/');
+        $result = $app->run($request);
+
+        $this->assertEquals('this is not json', $result->content());
+        $this->assertEquals('text/plain', $result->contentType());
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     * @expectedExceptionMessage Third argument to Bullet\App::registerResponseHandler must be a string. Given argument was not a string.
+     */
+    public function testThatResponseHandlerNamesMustBeAString()
+    {
+        $app = new Bullet\App();
+        $app->registerResponseHandler(
+            function($response) { return true; },
+            function($response) {},
+            123
+        );
+    }
+
+    public function testThatDefaultResponseHandlerMayBeRemoved()
+    {
+        $app = new Bullet\App();
+        $app->path('/', function($request) use($app) {
+            return array('a');
+        });
+
+        $app->removeResponseHandler('array_json');
+
+        $request = new \Bullet\Request('GET', '/');
+        $result = $app->run($request);
+
+        $this->assertEquals(array('a'), $result->content());
+    }
+
+    public function testThatUserResponseHandlersMayBeRemoved()
+    {
+        $app = new Bullet\App();
+        $app->path('/', function($request) use($app) {
+            return 'foo';
+        });
+        $request = new \Bullet\Request('GET', '/');
+
+        $app->registerResponseHandler(
+            function() { return true; },
+            function($response) {
+                $response->content('bar');
+            },
+            'foo'
+        );
+
+        $result = $app->run($request);
+        $this->assertEquals('bar', $result->content());
+
+        $app->removeResponseHandler('foo');
+        $result = $app->run($request);
+        $this->assertEquals('foo', $result->content());
+    }
+
+    public function testThatIndexedResponseHandlersMayBeRemoved()
+    {
+        $app = new Bullet\App();
+        $app->path('/', function($request) use($app) {
+            return 'foo';
+        });
+        $request = new \Bullet\Request('GET', '/');
+
+        $app->registerResponseHandler(
+            function() { return true; },
+            function($response) {
+                $response->content('bar');
+            }
+        );
+
+        $result = $app->run($request);
+        $this->assertEquals('bar', $result->content());
+
+        $app->removeResponseHandler(0);
+        $result = $app->run($request);
+        $this->assertEquals('foo', $result->content());
+    }
+
     public function testNestedRoutesInsideParamCallback()
     {
         $app = new Bullet\App();

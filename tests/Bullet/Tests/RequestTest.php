@@ -227,6 +227,25 @@ class RequestTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals('GET,POST,OPTIONS', $res->header('Allow'));
     }
 
+    function testOptionsHeaderForParamPaths()
+    {
+        $app = new Bullet\App();
+        $req = new Bullet\Request('OPTIONS', '/test/this_is_a_slug');
+        $app->path('test', function($request) use($app) {
+            $app->param('slug', function($request, $param) use ($app) {
+                $app->get(function($request) {
+                    return 'GET';
+                });
+                $app->post(function($request) {
+                    return 'POST';
+                });
+            });
+        });
+        $res = $app->run($req);
+        $this->assertEquals('OK', $res->content());
+        $this->assertEquals('GET,POST,OPTIONS', $res->header('Allow'));
+    }
+
     function testOptionsHeaderWithCustomOptionsRoute()
     {
         $app = new Bullet\App();

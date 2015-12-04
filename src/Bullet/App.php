@@ -123,7 +123,7 @@ class App extends Container
 
     public function param($filter, \Closure $callback)
     {
-        $this->_callbacks['param'][self::$_pathLevel][] = [$filter, $this->_prepClosure($callback)];
+        $this->_callbacks['param'][self::$_pathLevel][] = array($filter, $this->_prepClosure($callback));
         return $this;
     }
 
@@ -270,7 +270,8 @@ class App extends Container
 
         // Run 'param' callbacks
         if(!$pathMatched && isset($this->_callbacks['param'][self::$_pathLevel]) && count($this->_callbacks['param'][self::$_pathLevel]) > 0) {
-            foreach($this->_callbacks['param'][self::$_pathLevel] as list($filter, $cb)) {
+            foreach($this->_callbacks['param'][self::$_pathLevel] as $filter_cb) {
+                list($filter, $cb) = $filter_cb;
                 // Use matching registered filter type callback if given a non-callable string
                 if(is_string($filter) && !is_callable($filter) && isset($this->_paramTypes[$filter])) {
                     $filter = $this->_paramTypes[$filter];
@@ -286,13 +287,14 @@ class App extends Container
                 }
                 self::$_pathLevel++;
                 $res = call_user_func($cb, $request, $path);
+                $pathMatched = true;
                 break;
             }
         }
 
         // OPTIONS request with no custom options handler should return 200 OK with 'Accept' header
         if($pathMatched && $method === 'OPTIONS' && !isset($this->_callbacks['method'][self::$_pathLevel]['OPTIONS'])) {
-            $acceptMethods = array_keys($this->_callbacks['method'][self::$_pathLevel]);
+            $acceptMethods = isset($this->_callbacks['method'][self::$_pathLevel]) ? array_keys($this->_callbacks['method'][self::$_pathLevel]) : array();
             $acceptMethodsString = implode(',', array_merge($acceptMethods, array('OPTIONS')));
             $res = $this->response(200)->header('Allow', $acceptMethodsString);
             return $res;

@@ -27,6 +27,32 @@ class App extends Container
     protected $_responseHandlers = array();
 
     /**
+     * Counter that shows how deeply a run() call is nested.
+     * 
+     * This can happen if a callback calls $app->run()
+     */
+    protected $_nestingLevel = 0;
+
+    /**
+     * This variable stores the original callback setup, the one
+     * that existed right before the first run() call.
+     * 
+     * This is needed to reset _callbacks to the orginal callback setup
+     * in the beginning of each run() call.
+     */
+    protected $_originalCallbacks;
+
+    /**
+     * This stack stores the state of the URL parser.
+     * 
+     * State is pushed in the beginning of every run() call, and popped back
+     * when ends.
+     * 
+     * This makes possible nested run() calls.
+     */
+    protected $_stack = array();
+
+    /**
      * New App instance
      *
      * @param array $values Array of config settings and objects to pass into Pimple container
@@ -148,6 +174,40 @@ class App extends Container
         return $closure;
     }
 
+    protected function _push()
+    {
+        $this->_stack[] = array(
+             $this->_request,
+             $this->_response,
+             $this->_paths,
+             self::$_pathLevel,
+             $this->_requestMethod,
+             $this->_requestPath,
+             $this->_currentPath,
+             $this->_paramTypes,
+             $this->_callbacks,
+             $this->_helpers,
+             $this->_responseHandlers
+        );
+    }
+
+    protected function _pop()
+    {
+        list(
+             $this->_request,
+             $this->_response,
+             $this->_paths,
+             self::$_pathLevel,
+             $this->_requestMethod,
+             $this->_requestPath,
+             $this->_currentPath,
+             $this->_paramTypes,
+             $this->_callbacks,
+             $this->_helpers,
+             $this->_responseHandlers
+        ) = array_pop($this->_stack);
+    }
+
     /**
      * Run app with given REQUEST_METHOD and REQUEST_URI
      *
@@ -157,6 +217,19 @@ class App extends Container
      */
     public function run($method = null, $uri = null)
     {
+        $this->_push();
+
+        if ($this->_nestingLevel <= 0) {
+            /* We're the most outer run(). Save the _callbacks as our original
+             * callback setup */
+            $this->_originalCallbacks = $this->_callbacks;
+        } else {
+            /* We were called from a handler callback. Reset _callbacks to the
+             * original*/
+            $this->_callbacks = $this->_originalCallbacks;
+        }
+        $this->_nestingLevel++;
+
         $response = false;
         self::$_pathLevel = 0;
 
@@ -218,6 +291,9 @@ class App extends Container
 
         // Trigger events based on HTTP request format and HTTP response code
         $this->filter(array_filter(array($this->_request->format(), $response->status(), 'after')));
+
+        $this->_pop();
+        $this->_nestingLevel--;
 
         return $response;
     }

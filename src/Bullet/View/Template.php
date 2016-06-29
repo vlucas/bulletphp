@@ -341,8 +341,13 @@ class Template extends Response
                 $vars = $this->vars();
                 $render = function($templateFile) use($view, $vars) {
                     extract($vars);
-                    require $templateFile;
-                    return ob_get_clean();
+                    $renderedTemplate = null;
+                    try {
+                        require $templateFile;
+                    } finally {
+                        $renderedTemplate = ob_get_clean();
+                    }
+                    return $renderedTemplate;
                 };
                 $templateContent = $render($vfile);
             } else {

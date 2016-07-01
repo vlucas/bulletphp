@@ -163,14 +163,11 @@ class App extends Container
     }
 
     /**
-     * Prep closure callback by binding context in PHP >= 5.4
+     * Prep closure callback by binding context
      */
     protected function _prepClosure(\Closure $closure)
     {
-        // Bind local context for PHP >= 5.4
-        if (version_compare(PHP_VERSION, '5.4.0') >= 0 && !defined('HHVM_VERSION')) {
-            $closure = $closure->bindTo($this);
-        }
+        $closure = $closure->bindTo($this);
         return $closure;
     }
 

@@ -1361,23 +1361,15 @@ class AppTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals('a/b + c/a/b', $result->content());
     }
 
-    /**
-     * @requires PHP 5.4
-     */
-    public function testPHP5_4ClosureBinding()
+    public function testClosureBinding()
     {
         $app = new Bullet\App();
 
-        // Skip test for HHVM
-        if($app->request()->isHHVM()) {
-            $this->markTestSkipped('HHVM does not support Closure::bindTo');
-        }
-
-        $app->path('php5_4', function($request) {
+        $app->path('closure-binding', function($request) {
             return $this->url('/worked/');
         });
 
-        $result = $app->run('GET', '/php5_4/');
+        $result = $app->run('GET', '/closure-binding/');
         $this->assertEquals('cli:/worked/', $result->content());
     }
 }

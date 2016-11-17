@@ -14,7 +14,7 @@ class ChunkedTest extends \PHPUnit_Framework_TestCase
             $c->chunkSize = $chunkSize;
             return $c;
         });
-        $response = $app->run('GET', '/test');
+        $response = $app->run(new \Bullet\Request('GET', '/test'));
         $this->assertInstanceOf('\Bullet\\Response\\Chunked', $response);
         ob_start();
         $response->send();

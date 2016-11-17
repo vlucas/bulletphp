@@ -19,7 +19,7 @@ class SseResponseTest extends \PHPUnit_Framework_TestCase
         $app->path('/test', function($request) use ($content) {
             return new \Bullet\Response\Sse($content);
         });
-        $response = $app->run('GET', '/test');
+        $response = $app->run(new \Bullet\Request('GET', '/test'));
         $this->assertInstanceOf('\Bullet\\Response\\Sse', $response);
         ob_start();
         $response->send();

@@ -20,7 +20,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
             $collect[] = 'test';
         });
 
-        $app->run('GET', '/test/');
+        $app->run(new Bullet\Request('GET', '/test/'));
 
         $expect = array('test');
         $this->assertEquals($collect, $expect);
@@ -33,20 +33,8 @@ class AppTest extends \PHPUnit_Framework_TestCase
             return 'resource';
         });
 
-        $res = $app->run('GET', '/test/');
+        $res = $app->run(new Bullet\Request('GET', '/test/'));
         $this->assertEquals('resource', $res->content());
-    }
-
-    public function testMultiplePathsWithAray()
-    {
-        $app = new Bullet\App();
-        $app->path(array('test', 'test2'), function() use($app) {
-            return "test";
-        });
-
-        $res1 = $app->run('GET', '/test/');
-        $res2 = $app->run('GET', '/test2/');
-        $this->assertEquals($res1->content(), $res2->content());
     }
 
     public function testDoublePathGetWithBranch()
@@ -64,7 +52,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
             });
         });
 
-        $app->run('GET', '/test/foo/bar/');
+        $app->run(new Bullet\Request('GET', '/test/foo/bar/'));
 
         $expect = array('test', 'foo');
         $this->assertEquals($expect, $collect);
@@ -85,7 +73,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
             return 'test';
         });
 
-        $collect = (string) $app->run('GET', '/test/foo/');
+        $collect = (string) $app->run(new Bullet\Request('GET', '/test/foo/'));
 
         $expect = 'foo';
         $this->assertEquals($expect, $collect);
@@ -106,7 +94,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
             return 'test';
         });
 
-        $actual = $app->run('GET', '/test/foo/bar/');
+        $actual = $app->run(new Bullet\Request('GET', '/test/foo/bar/'));
         $expected = 404;
 
         $this->assertEquals($expected, $actual->status());
@@ -121,7 +109,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
             });
         });
 
-        $res = $app->run('GET', '/test-no-content');
+        $res = $app->run(new Bullet\Request('GET', '/test-no-content'));
         $this->assertEquals('', $res->content());
         $this->assertEquals(204, $res->status());
     }
@@ -144,7 +132,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
             });
         });
 
-        $app->run('post', '/test/foo/');
+        $app->run(new Bullet\Request('post', '/test/foo/'));
 
         $expected = array('test', 'foo', 'post');
         $this->assertEquals($expected, $collect);
@@ -162,7 +150,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
             $collect[] = 'notmatched';
         });
 
-        $app->run('GET', '/');
+        $app->run(new Bullet\Request('GET', '/'));
 
         $expected = array('root');
         $this->assertEquals($expected, $collect);
@@ -179,7 +167,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
             return "pong";
         });
 
-        $response = $app->run('GET', '/ping');
+        $response = $app->run(new Bullet\Request('GET', '/ping'));
         $this->assertEquals("pong", $response->content());
     }
 
@@ -198,7 +186,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
             });
         });
 
-        $response = $app->run('GET', '/rels/about/');
+        $response = $app->run(new Bullet\Request('GET', '/rels/about/'));
         $this->assertEquals("rel/about", $response->content());
     }
 
@@ -221,7 +209,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
             });
         });
 
-        $response = $app->run('GET', '/rels/about/test');
+        $response = $app->run(new Bullet\Request('GET', '/rels/about/test'));
         $this->assertEquals("rel/about/test", $response->content());
     }
 
@@ -240,7 +228,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
             });
         });
 
-        $response = $app->run('GET', '/ping');
+        $response = $app->run(new Bullet\Request('GET', '/ping'));
         $this->assertEquals("pong", $response->content());
     }
 
@@ -260,10 +248,10 @@ class AppTest extends \PHPUnit_Framework_TestCase
             });
         });
 
-        $response1 = $app->run('GET', 'about/slug');
+        $response1 = $app->run(new Bullet\Request('GET', 'about/slug'));
         $this->assertEquals(200, $response1->status());
         $this->assertEquals('about-slug', $response1->content());
-        $response2 = $app->run('GET', 'about/slug/foo/bar');
+        $response2 = $app->run(new Bullet\Request('GET', 'about/slug/foo/bar'));
         $this->assertEquals(404, $response2->status());
         $this->assertEquals('Not Found', $response2->content());
     }
@@ -289,7 +277,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
             });
         });
 
-        $response = $app->run('GET', '/ping/slug1');
+        $response = $app->run(new Bullet\Request('GET', '/ping/slug1'));
         $this->assertEquals("slug1", $response->content());
     }
 
@@ -308,7 +296,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
             $collect[] = 'notmatched';
         });
 
-        $app->run('GET', 'match/me');
+        $app->run(new Bullet\Request('GET', 'match/me'));
 
         $expected = array('matched', 'me');
         $this->assertEquals($expected, $collect);
@@ -321,7 +309,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
             return var_export($app->isRequestPath(), true);
         });
 
-        $actual = $app->run('GET', '/test/');
+        $actual = $app->run(new Bullet\Request('GET', '/test/'));
         $this->assertEquals('true', $actual->content());
     }
 
@@ -339,7 +327,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
             });
         });
 
-        $app->run('GET', 'foo/bar');
+        $app->run(new Bullet\Request('GET', 'foo/bar'));
         $this->assertEquals(array('false'), $actual);
     }
 
@@ -352,7 +340,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
             return 'test';
         });
 
-        $actual = $app->run('GET', '/test/');
+        $actual = $app->run(new Bullet\Request('GET', '/test/'));
         $this->assertInstanceOf('\Bullet\Response', $actual);
         $this->assertEquals(200, $actual->status());
         $this->assertEquals('test', $actual->content());
@@ -375,7 +363,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
             return 'test';
         });
 
-        $actual = $app->run('GET', '/test/teapot');
+        $actual = $app->run(new Bullet\Request('GET', '/test/teapot'));
         $this->assertInstanceOf('\Bullet\Response', $actual);
         $this->assertEquals('Teapot', $actual->content());
         $this->assertEquals(418, $actual->status());
@@ -400,7 +388,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
             });
         });
 
-        $app->run('GET', '/test/teapot');
+        $app->run(new Bullet\Request('GET', '/test/teapot'));
         $this->assertEquals(array('teapot'), $actual);
     }
 
@@ -423,7 +411,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
             });
         });
 
-        $response = $app->run('post', 'test/method');
+        $response = $app->run(new Bullet\Request('post', 'test/method'));
         $this->assertEquals(array(), $actual);
     }
 
@@ -441,7 +429,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
             });
         });
 
-        $response = $app->run('PUT', 'methodnotallowed');
+        $response = $app->run(new Bullet\Request('PUT', 'methodnotallowed'));
         $this->assertEquals(405, $response->status());
         $this->assertEquals('GET,POST', $response->header('Allow'));
     }
@@ -460,7 +448,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
             });
         });
 
-        $response = $app->run('GET', 'paramtest/42');
+        $response = $app->run(new Bullet\Request('GET', 'paramtest/42'));
         $this->assertEquals(200, $response->status());
         $this->assertEquals('42', $response->content());
     }
@@ -479,7 +467,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
             });
         });
 
-        $response = $app->run('GET', 'paramtest/my-blog-post-title');
+        $response = $app->run(new Bullet\Request('GET', 'paramtest/my-blog-post-title'));
         $this->assertEquals(200, $response->status());
         $this->assertEquals('my-blog-post-title', $response->content());
     }
@@ -507,7 +495,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
             });
         });
 
-        $response = $app->run('PUT', 'paramtest/546');
+        $response = $app->run(new Bullet\Request('PUT', 'paramtest/546'));
         //$this->assertEquals(200, $response->status());
         $this->assertEquals('update_546', $response->content());
     }
@@ -519,7 +507,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
             return 200;
         });
 
-        $response = $app->run('GET', 'testint');
+        $response = $app->run(new Bullet\Request('GET', 'testint'));
         $this->assertEquals(200, $response->status());
         $this->assertEquals("OK", $response->content());
     }
@@ -534,7 +522,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
             });
         });
 
-        $response = $app->run('GET', 'testint2');
+        $response = $app->run(new Bullet\Request('GET', 'testint2'));
         $this->assertEquals(429, $response->status());
         $this->assertEquals("Too Many Requests", $response->content());
     }
@@ -554,7 +542,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
             $response->status(200)->content("Intercepted 500 Error");
         });
 
-        $response = $app->run('GET', 'testhandler');
+        $response = $app->run(new Bullet\Request('GET', 'testhandler'));
         $this->assertEquals(200, $response->status());
         $this->assertEquals("Intercepted 500 Error", $response->content());
     }
@@ -574,7 +562,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
             $response->status(204);
         });
 
-        $response = $app->run('GET', 'testhandler');
+        $response = $app->run(new Bullet\Request('GET', 'testhandler'));
         $this->assertEquals(204, $response->status());
         $this->assertEquals("Oh Snap!", $response->content());
     }
@@ -589,7 +577,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
             });
         });
 
-        $response = $app->run('GET', '/test/foo.json');
+        $response = $app->run(new Bullet\Request('GET', '/test/foo.json'));
         $this->assertEquals(200, $response->status());
         $this->assertEquals('Not JSON', $response->content());
     }
@@ -609,7 +597,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
             });
         });
 
-        $response = $app->run('GET', '/test/foo.json');
+        $response = $app->run(new Bullet\Request('GET', '/test/foo.json'));
         $this->assertEquals(200, $response->status());
         $this->assertEquals(json_encode(array('foo' => 'bar', 'bar' => 'baz')), $response->content());
     }
@@ -628,7 +616,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
             });
         });
 
-        $response = $app->run('GET', '/test/foo.xml');
+        $response = $app->run(new Bullet\Request('GET', '/test/foo.xml'));
         $this->assertEquals('Not Acceptable', $response->content());
         $this->assertEquals(406, $response->status());
     }
@@ -662,10 +650,10 @@ class AppTest extends \PHPUnit_Framework_TestCase
             return "foo";
         });
         $app->path('bar', function($request) use($app) {
-            $foo = $app->run('GET', 'foo'); // $foo is now a `Bullet\Response` instance
+            $foo = $app->run(new Bullet\Request('GET', 'foo')); // $foo is now a `Bullet\Response` instance
             return $foo->content() . "bar";
         });
-        $response = $app->run('GET', 'bar');
+        $response = $app->run(new Bullet\Request('GET', 'bar'));
         $this->assertEquals(200, $response->status());
         $this->assertEquals('foobar', $response->content());
     }
@@ -680,7 +668,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
             });
         });
 
-        $response = $app->run('GET', '/test/foo/');
+        $response = $app->run(new Bullet\Request('GET', '/test/foo/'));
         $this->assertEquals(200, $response->status());
         $this->assertEquals('cli:/test/foo', $response->content());
     }
@@ -695,7 +683,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
             });
         });
 
-        $response = $app->run('GET', '/test/foo/');
+        $response = $app->run(new Bullet\Request('GET', '/test/foo/'));
         $this->assertEquals(200, $response->status());
         $this->assertEquals('cli:/test/foo/blogs', $response->content());
     }
@@ -710,7 +698,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
             });
         });
 
-        $response = $app->run('GET', '/test/foo/');
+        $response = $app->run(new Bullet\Request('GET', '/test/foo/'));
         $this->assertEquals(200, $response->status());
         $this->assertEquals('cli:/test/foo', $response->content());
     }
@@ -724,7 +712,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
             });
         });
 
-        $response = $app->run('GET', '/test/foo/');
+        $response = $app->run(new Bullet\Request('GET', '/test/foo/'));
         $this->assertEquals(200, $response->status());
         $this->assertEquals('cli:/test/foo', $response->content());
     }
@@ -736,7 +724,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
             return $app->url('./events/42'); // Should not be 'events/events/42' or just 'events'
         });
 
-        $response = $app->run('GET', '/events/');
+        $response = $app->run(new Bullet\Request('GET', '/events/'));
         $this->assertEquals(200, $response->status());
         $this->assertEquals('cli:/events/42', $response->content());
     }
@@ -754,7 +742,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
             });
         });
 
-        $response = $app->run('GET', '/test/foo/');
+        $response = $app->run(new Bullet\Request('GET', '/test/foo/'));
         $this->assertEquals(200, $response->status());
         $this->assertEquals('cli:/blog/42/edit', $response->content());
     }
@@ -768,7 +756,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
             });
         });
 
-        $actual = $app->run('POST', 'posts');
+        $actual = $app->run(new Bullet\Request('POST', 'posts'));
         $this->assertEquals(201, $actual->status());
     }
 
@@ -783,7 +771,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
             });
         });
 
-        $actual = $app->run('POST', 'posts.json');
+        $actual = $app->run(new Bullet\Request('POST', 'posts.json'));
         $this->assertEquals(201, $actual->status());
     }
 
@@ -801,7 +789,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
             throw new \Exception("This is a specific error message here!");
         });
 
-        $response = $app->run('GET', 'test');
+        $response = $app->run(new Bullet\Request('GET', 'test'));
         $this->assertEquals(500, $response->status());
         $this->assertEquals('yep', $response->content());
     }
@@ -816,7 +804,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
             throw new \InvalidArgumentException("This is a specific error message here!");
         });
 
-        $response = $app->run('POST', 'test');
+        $response = $app->run(new Bullet\Request('POST', 'test'));
         $this->assertEquals(200, $response->status());
         $this->assertEquals('There is a pankake on my head. Your argument is invalid.', $response->content());
     }
@@ -835,7 +823,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
             $request->foo = 'bar';
         });
 
-        $response = $app->run('POST', 'testhandler');
+        $response = $app->run(new Bullet\Request('POST', 'testhandler'));
         $this->assertEquals('bar', $response->content());
     }
 
@@ -853,7 +841,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
             $response->content($response->content() . 'AFTER');
         });
 
-        $response = $app->run('PUT', 'testhandler');
+        $response = $app->run(new Bullet\Request('PUT', 'testhandler'));
         $this->assertEquals('testAFTER', $response->content());
     }
 
@@ -965,7 +953,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
     public function testSubdomainRouteAfterMethodHandler()
     {
         $app = new Bullet\App();
-        $app->get(function($request) {
+        $app->get('', function($request) {
             return "GET main path";
         });
         $app->subdomain('bar', function($request) use($app) {
@@ -1307,7 +1295,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
             });
         });
 
-        $result = $app->run('GET', '/admin/client/1/toggleVisiblity/item');
+        $result = $app->run(new Bullet\Request('GET', '/admin/client/1/toggleVisiblity/item'));
         $this->assertEquals('deep', $result->content());
     }
 
@@ -1324,13 +1312,13 @@ class AppTest extends \PHPUnit_Framework_TestCase
         $app->path('c', function($request) use($app) {
             $app->path('a', function($request) use($app) {
                 $app->path('b', function($request) use($app) {
-                    $a = $app->run('GET', 'a/b');
+                    $a = $app->run(new Bullet\Request('GET', 'a/b'));
                     return $a->content() . " + c/a/b";
                 });
             });
         });
 
-        $result = $app->run('GET', 'c/a/b');
+        $result = $app->run(new Bullet\Request('GET', 'c/a/b'));
         $this->assertEquals('a/b + c/a/b', $result->content());
     }
 
@@ -1369,7 +1357,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
             return $this->url('/worked/');
         });
 
-        $result = $app->run('GET', '/closure-binding/');
+        $result = $app->run(new Bullet\Request('GET', '/closure-binding/'));
         $this->assertEquals('cli:/worked/', $result->content());
     }
 }

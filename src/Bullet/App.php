@@ -23,8 +23,13 @@ class App extends Container
         if ($response === null || $response instanceOf Response) {
             return $response;
         }
+
         if (is_string($response)) {
             return new Response($response, 200);
+        }
+
+        if (is_int($response)) {
+            return new Response(null, $response);
         }
     }
 

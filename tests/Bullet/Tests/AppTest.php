@@ -85,17 +85,13 @@ class AppTest extends \PHPUnit_Framework_TestCase
         $app = new Bullet\App();
         $app->path('test', function($request) use($app, &$collect) {
             $app->path('foo', function() use(&$collect) {
-                return 'foo';
             });
             $app->path('foo2', function() use(&$collect) {
-                return 'foo2';
             });
-            return 'test';
         });
 
         $actual = $app->run(new Bullet\Request('GET', '/test/foo/bar/'));
         $expected = 404;
-
         $this->assertEquals($expected, $actual->status());
     }
 
@@ -131,7 +127,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
             });
         });
 
-        $app->run(new Bullet\Request('post', '/test/foo/'));
+        $app->run(new Bullet\Request('POST', '/test/foo/'));
 
         $expected = array('test', 'foo', 'post');
         $this->assertEquals($expected, $collect);

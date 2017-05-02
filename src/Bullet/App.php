@@ -50,7 +50,7 @@ class App extends Container
         try {
             // Remove empty path elements
             $uri = $request->url();
-            $parts = [];
+            $parts = [''];
             foreach (explode('/', $uri) as $part) {
                 if ($part != '') {
                     $parts[] = $part;
@@ -71,7 +71,7 @@ class App extends Container
 
                 $c = $this->currentCallbacks['path'][$part];
 
-                // Reset the current callback array, so the path callback 
+                // Reset the current callback array, so the path callbacks can get a clean slate
                 $this->currentCallbacks = [];
 
                 // Execute path callback

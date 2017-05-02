@@ -16,8 +16,10 @@ class AppTest extends \PHPUnit_Framework_TestCase
         $collect = array();
 
         $app = new Bullet\App();
-        $app->path('test', function() use(&$collect) {
-            $collect[] = 'test';
+        $app->path('', function() use(&$collect) {
+            $this->path('test', function() use(&$collect) {
+                $collect[] = 'test';
+            });
         });
 
         $app->run(new Bullet\Request('GET', '/test/'));
@@ -29,8 +31,10 @@ class AppTest extends \PHPUnit_Framework_TestCase
     public function testSingleResourceGet()
     {
         $app = new Bullet\App();
-        $app->resource('test', function() {
-            return 'resource';
+        $app->path('', function() {
+            $this->resource('test', function() {
+                return 'resource';
+            });
         });
 
         $res = $app->run(new Bullet\Request('GET', '/test/'));
@@ -42,13 +46,15 @@ class AppTest extends \PHPUnit_Framework_TestCase
         $collect = array();
 
         $app = new Bullet\App();
-        $app->path('test', function($request) use($app, &$collect) {
-            $collect[] = 'test';
-            $app->path('foo', function() use(&$collect) {
-                $collect[] = 'foo';
-            });
-            $app->path('foo2', function() use(&$collect) {
-                $collect[] = 'foo2';
+        $app->path('', function() use($app, &$collect) {
+            $app->path('test', function($request) use($app, &$collect) {
+                $collect[] = 'test';
+                $app->path('foo', function() use(&$collect) {
+                    $collect[] = 'foo';
+                });
+                $app->path('foo2', function() use(&$collect) {
+                    $collect[] = 'foo2';
+                });
             });
         });
 
@@ -63,12 +69,14 @@ class AppTest extends \PHPUnit_Framework_TestCase
         $collect = array();
 
         $app = new Bullet\App();
-        $app->path('test', function($request) use($app, &$collect) {
-            $app->path('foo', function() use(&$collect) {
-                return 'foo';
-            });
-            $app->path('foo2', function() use(&$collect) {
-                return 'foo2';
+        $app->path('', function() use($app, &$collect) {
+            $app->path('test', function($request) use($app, &$collect) {
+                $app->path('foo', function() use(&$collect) {
+                    return 'foo';
+                });
+                $app->path('foo2', function() use(&$collect) {
+                    return 'foo2';
+                });
             });
         });
 
@@ -83,10 +91,12 @@ class AppTest extends \PHPUnit_Framework_TestCase
         $collect = array();
 
         $app = new Bullet\App();
-        $app->path('test', function($request) use($app, &$collect) {
-            $app->path('foo', function() use(&$collect) {
-            });
-            $app->path('foo2', function() use(&$collect) {
+        $app->path('', function() use($app, &$collect) {
+            $app->path('test', function($request) use($app, &$collect) {
+                $app->path('foo', function() use(&$collect) {
+                });
+                $app->path('foo2', function() use(&$collect) {
+                });
             });
         });
 
@@ -98,9 +108,11 @@ class AppTest extends \PHPUnit_Framework_TestCase
     public function test204HasNoBodyContent()
     {
         $app = new Bullet\App();
-        $app->path('test-no-content', function($request) use($app) {
-            $app->get(function($request) {
-                return 204;
+        $app->path('', function() use($app, &$collect) {
+            $app->path('test-no-content', function($request) use($app) {
+                $app->get(function($request) {
+                    return 204;
+                });
             });
         });
 
@@ -114,15 +126,17 @@ class AppTest extends \PHPUnit_Framework_TestCase
         $collect = array();
 
         $app = new Bullet\App();
-        $app->path('test', function($request) use($app, &$collect) {
-            $collect[] = 'test';
-            $app->path('foo', function() use($app, &$collect) {
-                $collect[] = 'foo';
-                $app->get(function() use(&$collect) {
-                    $collect[] = 'get';
-                });
-                $app->post(function() use(&$collect) {
-                    $collect[] = 'post';
+        $app->path('', function() use($app, &$collect) {
+            $app->path('test', function($request) use($app, &$collect) {
+                $collect[] = 'test';
+                $app->path('foo', function() use($app, &$collect) {
+                    $collect[] = 'foo';
+                    $app->get(function() use(&$collect) {
+                        $collect[] = 'get';
+                    });
+                    $app->post(function() use(&$collect) {
+                        $collect[] = 'post';
+                    });
                 });
             });
         });
@@ -138,7 +152,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
         $collect = array();
 
         $app = new Bullet\App();
-        $app->path('/', function($request) use($app, &$collect) {
+        $app->path('', function($request) use($app, &$collect) {
             $collect[] = 'root';
         });
         $app->path('notmatched', function($request) use($app, &$collect) {
@@ -154,12 +168,14 @@ class AppTest extends \PHPUnit_Framework_TestCase
     public function testExactPathMatchNotInParamCapture()
     {
         $app = new Bullet\App();
-        $app->path('/ping', function($request) use($app) {
-            $app->param('slug', function($request, $slug) use($app) {
-                return $slug;
-            });
+        $app->path('', function() use($app) {
+            $app->path('/ping', function($request) use($app) {
+                $app->param('slug', function($request, $slug) use($app) {
+                    return $slug;
+                });
 
-            return "pong";
+                return "pong";
+            });
         });
 
         $response = $app->run(new Bullet\Request('GET', '/ping'));

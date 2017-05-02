@@ -169,7 +169,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
     {
         $app = new Bullet\App();
         $app->path('', function() use($app) {
-            $app->path('/ping', function($request) use($app) {
+            $app->path('ping', function($request) use($app) {
                 $app->param('slug', function($request, $slug) use($app) {
                     return $slug;
                 });

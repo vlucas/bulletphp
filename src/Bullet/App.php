@@ -8,6 +8,7 @@ class App extends Container
 {
     protected $rootCallbacks;
     protected $currentCallbacks;
+    protected $exceptionHandler;
 
     public function __construct()
     {
@@ -45,6 +46,7 @@ class App extends Container
         $currentCallbacks = $this->currentCallbacks;
         $this->currentCallbacks = $this->rootCallbacks;
 
+        $response = null;
         try {
             // Remove empty path elements
             $uri = $request->url();
@@ -73,11 +75,11 @@ class App extends Container
                 $this->currentCallbacks = [];
 
                 // Execute path callback
-                $rsp = $this->executeCallback($c, $request);
+                $response = $this->executeCallback($c, $request);
 
                 // If there's already a response, return it and finish parsing the URL
-                if ($rsp instanceOf Response) {
-                    return $rsp;
+                if ($response instanceOf Response) {
+                    return $response;
                 }
             }
 
@@ -90,17 +92,27 @@ class App extends Container
             }
 
             // There indeed is a method callback, so let's call it!
-            $rsp = $this->executeCallback($this->currentCallbacks[$method], $request);
+            $response = $this->executeCallback($this->currentCallbacks[$method], $request);
 
             // If there's a response, we can return it
-            if ($rsp instanceOf Response) {
-                return $rsp;
+            if ($response instanceOf Response) {
+                return $response;
             }
 
             // TODO: formats?
             //return new Response(406); // Not acceptable format
 
             return new Response(null, 501); // Got no error, but got no response either. This is "Not Implemented".
+        } catch (\Exception $e) {
+            if ($response instanceOf \Bullet\Response) {
+                $response->status(500);
+            } else {
+                $response = new \Bullet\Response(null, 500);
+            }
+            if (is_callable($this->exceptionHandler)) {
+                ($this->exceptionHandler)($request, $response, $e);
+            }
+            return $response;
         } finally {
             $this->currentCallbacks = &$currentCallbacks;
         }
@@ -124,6 +136,11 @@ class App extends Container
     public function get(\Closure $callback)
     {
         $this->currentCallbacks['GET'] = $callback;
+    }
+
+    public function head(\Closure $callback)
+    {
+        $this->currentCallbacks['HEAD'] = $callback;
     }
 
     public function post(\Closure $callback)
@@ -159,7 +176,12 @@ class App extends Container
     {
     }
 
-    public function on()
+    public function exception(\Closure $callback)
+    {
+        $this->exceptionHandler = $callback;
+    }
+
+    public function on($event, \Closure $callback)
     {
     }
 
@@ -190,5 +212,35 @@ class App extends Container
     {
     }
 
-    // TODO: format
+    /**
+     * Handle HTTP content type as output format
+     *
+     * @param string $format HTTP content type format to handle for
+     * @param \Closure $callback Closure to execute to handle specified format
+     */
+    public function format($formats, \Closure $callback)
+    {
+        return $this;
+    }
+
+    /**
+     * Build URL for path
+     */
+    public function url($path = null)
+    {
+        // TODO: is this really necessary?
+    }
+
+    /**
+     * Return instance of Bullet\View\Template
+     *
+     * @param string $name Template name
+     * @param array $params Array of params to set
+     */
+    public function template($name, array $params = array())
+    {
+        $tpl = new View\Template($name);
+        $tpl->set($params);
+        return $tpl;
+    }
 }

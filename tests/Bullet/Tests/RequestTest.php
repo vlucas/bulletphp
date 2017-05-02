@@ -272,7 +272,7 @@ class RequestTest extends \PHPUnit_Framework_TestCase
         $req = new Bullet\Request('GET', '/cache');
         $app->path('cache', function($request) use($app) {
             $app->get(function($request) use($app) {
-                return $app->response(200, 'CONTENT')->cache(false);
+                return (new \Bullet\Response(200, 'CONTENT'))->cache(false);
             });
         });
         $res = $app->run($req);
@@ -288,7 +288,7 @@ class RequestTest extends \PHPUnit_Framework_TestCase
         $cacheTime = strtotime('+1 hour', $currentTime);
         $app->path('cache', function($request) use($app, $cacheTime) {
             $app->get(function($request) use($app, $cacheTime) {
-                return $app->response(200, 'CONTENT')->cache($cacheTime);
+                return (new \Bullet\Response(200, 'CONTENT'))->cache($cacheTime);
             });
         });
         $res = $app->run($req);
@@ -305,7 +305,7 @@ class RequestTest extends \PHPUnit_Framework_TestCase
         $cacheTime = new \DateTime('+1 hour');
         $app->path('cache', function($request) use($app, $cacheTime) {
             $app->get(function($request) use($app, $cacheTime) {
-                return $app->response(200, 'CONTENT')->cache($cacheTime);
+                return (new \Bullet\Response(200, 'CONTENT'))->cache($cacheTime);
             });
         });
         $res = $app->run($req);
@@ -322,7 +322,7 @@ class RequestTest extends \PHPUnit_Framework_TestCase
         $cacheTime = '1 hour';
         $app->path('cache', function($request) use($app, $cacheTime) {
             $app->get(function($request) use($app, $cacheTime) {
-                return $app->response(200, 'CONTENT')->cache($cacheTime);
+                return (new \Bullet\Response(200, 'CONTENT'))->cache($cacheTime);
             });
         });
         $res = $app->run($req);
@@ -339,7 +339,7 @@ class RequestTest extends \PHPUnit_Framework_TestCase
         $cacheTime = 3600;
         $app->path('cache', function($request) use($app, $cacheTime) {
             $app->get(function($request) use($app, $cacheTime) {
-                return $app->response(200, 'CONTENT')->cache($cacheTime);
+                return (new \Bullet\Response(200, 'CONTENT'))->cache($cacheTime);
             });
         });
         $res = $app->run($req);

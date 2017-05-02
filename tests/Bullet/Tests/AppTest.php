@@ -297,35 +297,6 @@ class AppTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals($expected, $collect);
     }
 
-    public function testHelperIsRequestPathReturnsTrueWhenPathIsCurrent()
-    {
-        $app = new Bullet\App();
-        $app->path('test', function($request) use($app, &$collect) {
-            return var_export($app->isRequestPath(), true);
-        });
-
-        $actual = $app->run(new Bullet\Request('GET', '/test/'));
-        $this->assertEquals('true', $actual->content());
-    }
-
-    public function testHelperIsRequestPathReturnsFalseWhenPathIsNotCurrent()
-    {
-        $actual = array();
-
-        $app = new Bullet\App();
-        $app->path('foo', function($request) use($app, &$actual) {
-            // Should be 'false' - "foo" is not the full requested path, "foo/bar" is
-            $actual[] = var_export($app->isRequestPath(), true);
-
-            $app->path('bar', function($request) use($app) {
-                return 'anything at all';
-            });
-        });
-
-        $app->run(new Bullet\Request('GET', 'foo/bar'));
-        $this->assertEquals(array('false'), $actual);
-    }
-
     public function testStringReturnsBulletResponseInstanceWith200StatusCodeAndCorrectContent()
     {
         $collect = array();
@@ -349,7 +320,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
                 // GET
                 $app->get(function($request) use($app) {
                     // Should be returned
-                    return $app->response(418, "Teapot");
+                    return new \Bullet\Response(418, "Teapot");
                 });
 
                 // Should not be returned
@@ -548,7 +519,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
         $app->path('testhandler', function() use($app) {
             // GET
             $app->get(function($request) use($app) {
-                return $app->response(500, "Oh Snap!");
+                return new \Bullet\Response(500, "Oh Snap!");
             });
         });
 
@@ -627,7 +598,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
             });
             $app->post(function($request) use($app) {
                 $app->format('json', function() use($app) {
-                    return $app->response(201, array('created' => 'something'));
+                    return new \Bullet\Response(201, array('created' => 'something'));
                 });
             });
         });
@@ -747,7 +718,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
         $app = new Bullet\App();
         $app->path('posts', function($request) use($app) {
             $app->post(function() use($app) {
-                return $app->response(201, 'Created something!');
+                return new \Bullet\Response(201, 'Created something!');
             });
         });
 
@@ -761,7 +732,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
         $app->path('posts', function($request) use($app) {
             $app->post(function() use($app) {
                 $app->format('json', function() use($app) {
-                    return $app->response(201, array('created' => 'something'));
+                    return new \Bullet\Response(201, array('created' => 'something'));
                 });
             });
         });
@@ -773,7 +744,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
     public function testExceptionsAreCaughtWhenCustomHandlerIsRegistered()
     {
         $app = new Bullet\App();
-        $app->on('Exception', function(Request $request, Response $response, \Exception $e) {
+        $app->exception(function(Request $request, Response $response, \Exception $e) {
             if($e instanceof \Exception) {
                 $response->content('yep');
             } else {
@@ -894,7 +865,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
         $app = new Bullet\App();
         $app->path('test', function($request) use($app) {
             $app->head(function($request) use($app) {
-                return $app->response()->header('X-Special', 'Stuff');
+                return (new \Bullet\Response())->header('X-Special', 'Stuff');
             });
             $app->get(function($request) {
                 return 'I am hidden with a HEAD request!';
@@ -913,7 +884,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
         $app = new Bullet\App();
         $app->path('test', function($request) use($app) {
             $app->get(function($request) use($app) {
-                return $app->response()
+                return (new \Bullet\Response())
                     ->status(200)
                     ->header('X-Special', 'Stuff')
                     ->content('foo');

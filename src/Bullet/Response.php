@@ -18,13 +18,13 @@ class Response
     protected $_encoding = "UTF-8";
     protected $_contentType = "text/html";
     protected $_protocol = "HTTP/1.1";
-    protected $_headers = array();
+    protected $_headers;
 
 
     /**
      * Constructor Function
      */
-    public function __construct($content = null, $status = 200)
+    public function __construct($content = null, $status = 200, array $headers = [])
     {
         // Allow composition of response objects
         $class = __CLASS__;
@@ -36,6 +36,7 @@ class Response
             $this->_status = $status;
         }
         $this->_protocol = isset($_SERVER['SERVER_PROTOCOL']) ? $_SERVER['SERVER_PROTOCOL'] : 'http';
+        $this->_headers = $headers;
     }
 
 

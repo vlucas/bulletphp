@@ -345,7 +345,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
         $actual = [];
 
         $app = new Bullet\App();
-        $app->path('', function() use($app) {
+        $app->path('', function() use($app, &$actual) {
 			$app->path('test', function($request) use($app, &$actual) {
 				$app->path('teapot', function($request) use($app, &$actual) {
 					// Should be executed

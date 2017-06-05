@@ -119,7 +119,7 @@ class App extends Container
             // The URI has been processed. Call the appropriate method callback
             if (!array_key_exists($method, $this->currentCallbacks)) {
                 // Nope, we can't serve this URI, 405 Not Allowed
-                return new Response(null, 405);
+                return new Response(null, 405, ['Allow' => implode(',', array_keys($this->currentCallbacks))]);
             }
 
             // There indeed is a method callback, so let's call it!
@@ -129,6 +129,7 @@ class App extends Container
             if ($response instanceOf Response) {
                 return $response;
             }
+            //print "DONE";
 
             // TODO: formats?
             //return new Response(406); // Not acceptable format

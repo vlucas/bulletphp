@@ -16,10 +16,10 @@ class App extends Container
         $this->currentCallbacks = &$this->rootCallbacks;
     }
 
-    protected function executeCallback(\Closure $c, $request)
+    protected function executeCallback(\Closure $c, array $params = [])
     {
         $c = \Closure::bind($c, $this);
-        $response = $c($request);
+		$response = call_user_func_array($c, $params);
 
         if ($response === null || $response instanceOf Response) {
             return $response;
@@ -63,25 +63,56 @@ class App extends Container
 
             // Walk through the URI and execute path callbacks
             foreach ($parts as $part) {
-                // Try to find a callback array for the current URI part
-                if (!array_key_exists('path', $this->currentCallbacks) || !array_key_exists($part, $this->currentCallbacks['path'])) {
-                    // TODO: generate an exeception, and catch that.
-                    return new Response(null, 404);
+				//print "$part ";
+				// Try to find a callback array for the current URI part
+                if (array_key_exists('path', $this->currentCallbacks) && array_key_exists($part, $this->currentCallbacks['path'])) {
+					//print "PATH\n";
+					// Let $c be the callback that has to be run now.
+					$c = $this->currentCallbacks['path'][$part];
+
+					// Reset the current callback array, so the path callbacks can get a clean slate
+					$this->currentCallbacks = [];
+
+					// Execute path callback
+					$response = $this->executeCallback($c, [$request]);
+
+					// If there's already a response, return it and finish parsing the URL
+					if ($response instanceOf Response) {
+						return $response;
+					}
                 }
+				// Try to find a param match
+                elseif (array_key_exists('param', $this->currentCallbacks)) {
+					//print "PARAM \n";
+					// Let $c be the callback that has to be run now.
+					// This needs a linear search trhough the param filters
+					$c = null;
+					foreach ($this->currentCallbacks['param'] as $filterCallbackTuple) {
+						if ($filterCallbackTuple[0]($part)) {
+							$c = $filterCallbackTuple[1];
+							break;
+						}
+					}
+					if ($c instanceOf \Closure) {
+						// Reset the current callback array, so the path callbacks can get a clean slate
+						$this->currentCallbacks = [];
 
-                $c = $this->currentCallbacks['path'][$part];
+						// Execute callback
+						$response = $this->executeCallback($c, [$request, $part]);
 
-                // Reset the current callback array, so the path callbacks can get a clean slate
-                $this->currentCallbacks = [];
+						// If there's already a response, return it and finish parsing the URL
+						if ($response instanceOf Response) {
+							return $response;
+						}
+					} else {
+						return new Response(null, 404);
+					}
+                } else {
+					//print "404\n";
+					return new Response(null, 404);
+				}
 
-                // Execute path callback
-                $response = $this->executeCallback($c, $request);
-
-                // If there's already a response, return it and finish parsing the URL
-                if ($response instanceOf Response) {
-                    return $response;
-                }
-            }
+			}
 
             $method = $request->method();
 
@@ -92,7 +123,7 @@ class App extends Container
             }
 
             // There indeed is a method callback, so let's call it!
-            $response = $this->executeCallback($this->currentCallbacks[$method], $request);
+            $response = $this->executeCallback($this->currentCallbacks[$method], [$request]);
 
             // If there's a response, we can return it
             if ($response instanceOf Response) {
@@ -104,6 +135,7 @@ class App extends Container
 
             return new Response(null, 501); // Got no error, but got no response either. This is "Not Implemented".
         } catch (\Exception $e) {
+			//var_dump($e->getMessage());
             if ($response instanceOf \Bullet\Response) {
                 $response->status(500);
             } else {
@@ -119,7 +151,7 @@ class App extends Container
         }
     }
 
-    public function resource($part, \Closure $callback)
+    public function resource(string $part, \Closure $callback)
     {
         $this->currentCallbacks['path'][$part] = $callback;
     }
@@ -129,7 +161,14 @@ class App extends Container
         $this->currentCallbacks['path'][$part] = $callback;
     }
 
-    public function param($filter, \Closure $callback)
+	/**
+	 * Param match has lower priority than path match
+	 * 
+	 * e.g. if a path section matches, then the search concludes
+	 * the current segment and params won't even be searched for a
+	 * match.
+	 */
+    public function param(\Closure $filter, \Closure $callback)
     {
         $this->currentCallbacks['param'][] = [$filter, $callback];
     }
@@ -243,5 +282,46 @@ class App extends Container
         $tpl = new View\Template($name);
         $tpl->set($params);
         return $tpl;
+    }
+
+    public static function paramInt()
+    {
+		return function($value) {
+            return filter_var($value, FILTER_VALIDATE_INT);
+        };
+    }
+
+    public static function paramFloat()
+	{
+		return function($value) {
+            return filter_var($value, FILTER_VALIDATE_FLOAT);
+        };
+    }
+
+	/**
+	 * 
+     * True = "1", "true", "on", "yes"
+     * False = "0", "false", "off", "no"
+	 */
+    public static function paramBoolean()
+	{
+		return function($value) {
+            $filtered = filter_var($value, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+            return (!empty($filtered) && $filtered !== null);
+        };
+    }
+
+    public static function paramSlug()
+	{
+		return function($value) {
+            return (preg_match("/[a-zA-Z0-9-_]/", $value) > 0);
+        };
+    }
+
+    public static function paramEmail()
+	{
+		return function($value) {
+            return filter_var($value, FILTER_VALIDATE_EMAIL);
+        };
     }
 }

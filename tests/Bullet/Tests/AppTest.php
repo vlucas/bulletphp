@@ -469,7 +469,6 @@ class AppTest extends \PHPUnit_Framework_TestCase
 						// Update resource
 						return 'update_' . $id;
 					});
-					return $id;
 				});
 				// All printable characters except space
 				$app->param($app::paramSlug(), function($request, $slug) use($app) {
@@ -494,7 +493,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
 
         $response = $app->run(new Bullet\Request('GET', 'testint'));
         $this->assertEquals(200, $response->status());
-        $this->assertEquals("OK", $response->content());
+        $this->assertEquals(null, $response->content());
     }
 
     public function testHandlersCanReturnIntergerAsHttpStatusInMethodCallback()
@@ -511,7 +510,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
 
         $response = $app->run(new Bullet\Request('GET', 'testint2'));
         $this->assertEquals(429, $response->status());
-        $this->assertEquals("Too Many Requests", $response->content());
+        $this->assertEquals(null, $response->content());
     }
 
     public function testCustomHttpStatusHandler()

@@ -149,14 +149,14 @@ class Request
                 if(isset($params[$raw_transformed])) {
                     $params = array();
                     $json = json_decode($raw, true);
-                    if($json !== false) {
+                    if(is_array($json)) {
                         $params = $json;
                     }
                 }
             }
 
             // Set params if any decoding was successful
-            if($params) {
+            if(is_array($params)) {
                 // Real POST and GET params take precidence over raw body
                 if($method === 'POST') {
                     $this->_postParams = array_merge($params, $this->_postParams);

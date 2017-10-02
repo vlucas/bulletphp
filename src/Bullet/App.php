@@ -155,7 +155,7 @@ class App extends Container
      * @param string optional $uri URI/path to run
      * @return \Bullet\Response
      */
-    public function run($method, $uri = null)
+    public function run($method = null, $uri = null)
     {
         $response = false;
         self::$_pathLevel = 0;

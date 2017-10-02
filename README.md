@@ -10,9 +10,10 @@ and execute deeper paths as paths and parameters are matched.
 [![Build
 Status](https://secure.travis-ci.org/vlucas/bulletphp.png)](http://travis-ci.org/vlucas/bulletphp)
 
-NO LONGER MAINTAINED
+PROJECT MAINTENANCE RESUMES
 ------------
-Bullet is **no longer maintained**. If anyone wants to carry the torch, let me know via the email in my GitHub profile.
+Bullet becomes an active project again. Currently there's a changing of
+the guard. Feel free to further use and contribute to the framework.
 
 Requirements
 ------------

@@ -602,13 +602,29 @@ class Request
 
 
     /**
-     * Request URI, as seen by PHP
+     * Request URI, recognize a subdirectory and remove them
      *
      * @return string request URI from $_SERVER superglobal
      */
     public function uri()
     {
-        return $this->server('REQUEST_URI');
+        $script = $this->server('SCRIPT_NAME');
+        $rquuri = $this->server('REQUEST_URI');
+        
+        if (strpos($rquuri, $script) !== false) {
+            $phypath = $script;
+        } else {
+            $phypath = str_replace('\\', '', dirname($script));
+        }
+        
+        $script = rtrim($phypath, '/');
+        $pathinfo = $phypath;
+        
+        if (substr($rquuri, 0, strlen($phypath)) == $phypath) {
+            $pathinfo = substr($rquuri, strlen($phypath));
+        }
+        
+        return $pathinfo;
     }
 
 

@@ -704,6 +704,17 @@ class Request
 
 
     /**
+     * Try to decode the raw request body as JSON and return it
+     * 
+     * This method calls json_decode on raw() each time it's called,
+     * so don't overindulge.
+     */
+    public function json()
+    {
+        return json_decode($this->raw(), true);
+    }
+
+    /**
      *	Determine is incoming request is POST
      *
      *	@return boolean

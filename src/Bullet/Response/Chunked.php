@@ -97,9 +97,6 @@ class Chunked extends \Bullet\Response
      */
     public function __toString()
     {
-        trigger_error("Chunked response is converted to string. This does not make much sense. Use send() instead.");
-        $this->send();
-        return "";
+        trigger_error("Chunked response is converted to string. This doesn not make sense. Use send() instead.", E_USER_ERROR);
     }
-
 }

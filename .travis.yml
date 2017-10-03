@@ -12,5 +12,5 @@ before_script:
   - composer install --no-interaction
 
 # Script to run tests
-script: phpunit
+script: ./vendor/bin/phpunit
 

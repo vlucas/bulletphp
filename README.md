@@ -18,7 +18,7 @@ the guard. Feel free to further use and contribute to the framework.
 Requirements
 ------------
 
- * PHP 5.3+ (PHP 5.4 recommended)
+ * PHP 5.6+ (PHP 7.1 recommended)
  * [Composer](http://getcomposer.org) for all package management and
    autoloading (may require command-line access)
 

@@ -3,9 +3,9 @@ language: php
 
 # list any PHP version you want to test against
 php:
-  - 5.3
-  - 5.4
-  - 5.5
+  - 5.6
+  - 7.0
+  - 7.1
   - hhvm
 
 before_script:
@@ -14,6 +14,3 @@ before_script:
 # Script to run tests
 script: phpunit
 
-matrix:
-  allow_failures:
-    - php: hhvm

@@ -182,7 +182,11 @@ class Response
 
 
     /**
-     * Set HTTP response body
+     * Set or get the HTTP response body
+     *
+     * Calling with no/null argument will return the current content.
+     * Calling with a non-null argument will set the content and return
+     * the Response object itself (fluent interface).
      *
      * @param string $content Content
      */
@@ -190,8 +194,10 @@ class Response
     {
         if(null === $content) {
             return $this->_content;
+        } else {
+            $this->_content = $content;
+            return $this;
         }
-        $this->_content = $content;
     }
     public function appendContent($content)
     {

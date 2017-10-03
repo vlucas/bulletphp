@@ -925,6 +925,25 @@ class AppTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals('', $response->content());
     }
 
+    public function testSupportCustomHeaders()
+    {
+        $app = new Bullet\App();
+        $app->path('test', function($request) use($app) {
+            $app->get(function($request) use($app) {
+                return $app->response()
+                    ->status(200)
+                    ->header('X-Special', 'Stuff')
+                    ->content('foo');
+            });
+        });
+
+        $request = new \Bullet\Request('GET', '/test');
+        $response = $app->run($request);
+        $this->assertEquals('GET', $request->method());
+        $this->assertEquals('Stuff', $response->header('X-Special'));
+        $this->assertEquals('foo', $response->content());
+    }
+
     public function testSubdomainRoute()
     {
         $app = new Bullet\App();

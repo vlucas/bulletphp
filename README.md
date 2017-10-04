@@ -534,9 +534,10 @@ HTTP response.
 Running Tests
 -------------
 
-To run the Bullet test suite, simply run `phpunit` in the root of the
-directory where the bullet files are in. Please make sure to add tests
-and run the test suite before submitting pull requests for any contributions.
+To run the Bullet test suite, simply run `vendor/bin/phpunit` in the
+root of the directory where the bullet files are in. Please make sure
+to add tests and run the test suite before submitting pull requests for
+any contributions.
 
 Credits
 -------

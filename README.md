@@ -79,7 +79,7 @@ Setup your `composer.json` file at the root of your project
 
     {
         "require": {
-            "vlucas/bulletphp": "*"
+            "vlucas/bulletphp": "~1.7"
         }
     }
 

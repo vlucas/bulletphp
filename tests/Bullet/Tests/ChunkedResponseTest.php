@@ -9,10 +9,12 @@ class ChunkedTest extends \PHPUnit_Framework_TestCase
     ];
     private function _runTestBulletApp($chunkSize, $content) {
         $app = new \Bullet\App();
-        $app->path('/test', function($request) use ($chunkSize, $content) {
-            $c = new \Bullet\Response\Chunked($content);
-            $c->chunkSize = $chunkSize;
-            return $c;
+        $app->path('', function() use ($chunkSize, $content) {
+            $this->path('test', function() use ($chunkSize, $content) {
+                $c = new \Bullet\Response\Chunked($content);
+                $c->chunkSize = $chunkSize;
+                return $c;
+            });
         });
         $response = $app->run(new \Bullet\Request('GET', '/test'));
         $this->assertInstanceOf('\Bullet\\Response\\Chunked', $response);

@@ -110,7 +110,8 @@ class App extends Container
                 $response = new \Bullet\Response(null, 500);
             }
             if (is_callable($this->exceptionHandler)) {
-                ($this->exceptionHandler)($request, $response, $e);
+                $eh = $this->exceptionHandler;
+                $eh($request, $response, $e);
             }
             return $response;
         } finally {

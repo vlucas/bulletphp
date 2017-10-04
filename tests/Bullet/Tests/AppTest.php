@@ -70,7 +70,6 @@ class AppTest extends \PHPUnit_Framework_TestCase
             $app->path('foo2', function() use(&$collect) {
                 return 'foo2';
             });
-            return 'test';
         });
 
         $collect = (string) $app->run(new Bullet\Request('GET', '/test/foo/'));
@@ -953,7 +952,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
     public function testSubdomainRouteAfterMethodHandler()
     {
         $app = new Bullet\App();
-        $app->get('', function($request) {
+        $app->get(function($request) {
             return "GET main path";
         });
         $app->subdomain('bar', function($request) use($app) {

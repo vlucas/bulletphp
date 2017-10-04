@@ -6,13 +6,13 @@ use Pimple\Container;
 
 class App extends Container
 {
-    protected $callbacks;
+    protected $rootCallbacks;
     protected $currentCallbacks;
 
     public function __construct()
     {
-        $this->callbacks = [];
-        $this->currentCallbacks = &$this->callbacks;
+        $this->rootCallbacks = [];
+        $this->currentCallbacks = &$this->rootCallbacks;
     }
 
     protected function executeCallback(\Closure $c, $request)
@@ -37,8 +37,8 @@ class App extends Container
     public function run(Request $request)
     {
         // Save the app's URL parser state (e.g. the current callback map)
-        $currentCallbacks = &$this->currentCallbacks;
-        $this->currentCallbacks = &$this->callbacks;
+        $currentCallbacks = $this->currentCallbacks;
+        $this->currentCallbacks = $this->rootCallbacks;
 
         try {
             // Remove empty path elements
@@ -57,15 +57,18 @@ class App extends Container
             // Walk through the URI and execute path callbacks
             foreach ($parts as $part) {
                 // Try to find a callback array for the current URI part
-                if (!array_key_exists($part, $this->currentCallbacks) || !array_key_exists('path', $this->currentCallbacks[$part])) {
+                if (!array_key_exists('path', $this->currentCallbacks) || !array_key_exists($part, $this->currentCallbacks['path'])) {
+                    // TODO: generate an exeception, and catch that.
                     return new Response(null, 404);
                 }
 
-                // Yes, there is a callback array, set it as the current one
-                $this->currentCallbacks = $this->currentCallbacks[$part];
+                $c = $this->currentCallbacks['path'][$part];
+
+                // Reset the current callback array, so the path callback 
+                $this->currentCallbacks = [];
 
                 // Execute path callback
-                $rsp = $this->executeCallback($this->currentCallbacks['path'], $request);
+                $rsp = $this->executeCallback($c, $request);
 
                 // If there's already a response, return it and finish parsing the URL
                 if ($rsp instanceOf Response) {
@@ -98,47 +101,47 @@ class App extends Container
         }
     }
 
-    public function resource($part, $callback)
+    public function resource($part, \Closure $callback)
     {
-        $this->currentCallbacks[$part]['path'] = $callback;
+        $this->currentCallbacks['path'][$part] = $callback;
     }
 
-    public function path($part, $callback)
+    public function path($part, \Closure $callback)
     {
-        $this->currentCallbacks[$part]['path'] = $callback;
+        $this->currentCallbacks['path'][$part] = $callback;
     }
 
-    public function param($param, $callback)
+    public function param($filter, \Closure $callback)
     {
-        $this->currentCallbacks[$part]['param'] = $callback;
+        $this->currentCallbacks['param'][] = [$filter, $callback];
     }
 
-    public function get($callback)
+    public function get(\Closure $callback)
     {
         $this->currentCallbacks['GET'] = $callback;
     }
 
-    public function post($callback)
+    public function post(\Closure $callback)
     {
         $this->currentCallbacks['POST'] = $callback;
     }
 
-    public function put($callback)
+    public function put(\Closure $callback)
     {
         $this->currentCallbacks['PUT'] = $callback;
     }
 
-    public function delete($callback)
+    public function delete(\Closure $callback)
     {
         $this->currentCallbacks['DELETE'] = $callback;
     }
 
-    public function patch($callback)
+    public function patch(\Closure $callback)
     {
         $this->currentCallbacks['PATCH'] = $callback;
     }
 
-    public function options($callback)
+    public function options(\Closure $callback)
     {
         $this->currentCallbacks['OPTIONS'] = $callback;
     }

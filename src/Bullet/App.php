@@ -62,8 +62,20 @@ class App extends Container
             // TODO: run before filter
 
             // Walk through the URI and execute path callbacks
-            foreach ($parts as $part) {
-				//print "$part ";
+            $cp = count($parts);
+            $i = 0;
+            $ext = '';
+             foreach ($parts as $part) {
+				++$i;
+				// If the last part contains a dot, populate the extension variable $ext
+				// and remove the extension from the $part.
+				if ($cp === $i) {
+					$_ = explode('.', $part);
+					if (count($_) > 1) {
+						$part = $_[0];
+						$ext = $_[1];
+					}
+				}
 				// Try to find a callback array for the current URI part
                 if (array_key_exists('path', $this->currentCallbacks) && array_key_exists($part, $this->currentCallbacks['path'])) {
 					//print "PATH\n";

@@ -420,6 +420,94 @@ HTTP response is sent. The first argument is a template name, and the
 second (optional) argument is an array of parameters to pass to the
 template for use.
 
+### Serving large responses
+
+Bullet works by wrapping every possible reponse with a Response object. This 
+would normally mean that the entire request must be known (~be in memory) when 
+you construct a new Response (either explicitly, or trusting Bullet to 
+construct one for you).
+
+This would be bad news for those serving large files or contents of big 
+database tables or collections, since everything would have to be loaded into 
+memory.
+
+Here comes `\Bullet\Response\Chunked` for the rescue.
+
+This response type requires some kind of iterable type. It works with regular
+arrays or array-like objects, but most importatnly, it works with generator
+functions too. Here's an example (database functions are purely fictional):
+
+    $app->path('foo', function($request) use($app) {
+        $g = function () {
+            $cursor = new ExampleDatabaseQuery("select * from giant_table");
+            foreach ($cursor as $row) {
+                yield example_format_db_row($row);
+            }
+            $cursor->close();
+        };
+        return new \Bullet\Response\Chunked($g());
+    });
+
+The `$g` variable will contain a Closure that uses `yield` to fetch, process,
+and return data from a big dataset, using only a fraction of the memory needed
+to store all the rows at once.
+
+This results in a HTTP chunked response. See 
+https://tools.ietf.org/html/rfc7230#section-4.1 for the technical details.
+
+### HTTP Server Sent Events
+
+Server sent events are one way to open up a persistent channel to a web server, 
+and receive notifications. This can be used to implement a simple webchat for 
+example.
+
+This standard is part of HTML5, see 
+https://html.spec.whatwg.org/multipage/server-sent-events.html#server-sent-events 
+for details.
+
+The example below show a simple application using the fictional send_message 
+and receive_message functions for communications. These can be implemented over 
+various message queues, or simple named pipes.
+
+    $app->path('sendmsg', function($request) {
+        $this->post(function($request) {
+            $data = $request->postParam('message');
+            send_message($data);
+            return 201;
+        });
+    });
+
+    $app->path('readmsgs', function($request) {
+        $this->get(function($request) {
+            $g = function () {
+                while (true) {
+                    $data = receive_message();
+                    yield [
+                        'event' => 'message',
+                        'data'  => $data
+                    ];
+                }
+            };
+            \Bullet\Response\Sse::cleanupOb(); // Remove any output buffering
+            return new \Bullet\Response\Sse($g());
+        });
+    });
+
+The SSE response uses chunked encoding, contrary to the recommendation in the 
+standard. We can do this, since we tailoe out chunks to be exactly 
+message-sized.
+
+This will not confuse upstream servers when they see no chunked encoding, AND
+no Content-Length header field, and might try to "fix" this by either reading
+the entire response, or doing the chunking on their own.
+
+PHP's output buffering can also interfere with messaging, hence the call to
+\Bullet\Response\Sse::cleanupOb(). This method flushes and ends every level of
+output buffering that might present before sending the response.
+
+The SSE response automatically sends the `X-Accel-Buffering: no` header to 
+prevent the server from buffering the messages.
+
 
 Nested Requests (HMVC style code re-use)
 ----------------------------------------

@@ -36,15 +36,24 @@ class Sse extends \Bullet\Response
         $this->_events = $events;
     }
 
+    public static function cleanupOb()
+    {
+        while (ob_get_level() > 0) {
+            ob_end_flush();
+        }
+    }
+
     protected function _sendEvent(array $event) {
+        $buf = '';
         foreach ($event as $k => $v) {
             if (null === $v) {
-                printf("%s\r\n", $k);
+                $buf .= sprintf("%s\r\n", $k);
             } else {
-                printf("%s: %s\r\n", $k, $v);
+                $buf .= sprintf("%s: %s\r\n", $k, $v);
             }
         }
-        printf("\r\n");
+        $buf .= "\r\n";
+        printf("%x\r\n%s\r\n", strlen($buf), $buf);
         flush(); // HHVM doesn't do implicit flush, it eats all memory instead. Nice.
     }
 
@@ -56,6 +65,9 @@ class Sse extends \Bullet\Response
 
         if (!headers_sent()) {
             $this->header('Content-Type', 'text/event-stream');
+            $this->header('Transfer-Encoding', 'chunked');
+            $this->header('Content-Encoding', 'identity');
+            $this->header('X-Accel-Buffering', 'no');
 
             $this->sendStatus();
             $this->sendHeaders();

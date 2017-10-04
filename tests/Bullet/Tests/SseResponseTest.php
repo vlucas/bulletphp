@@ -31,11 +31,15 @@ class SseResponseTest extends \PHPUnit_Framework_TestCase
     {
         $output = $this->_runTestBulletApp($this->_testContent);
         $shouldBe
-            = "foo: bar\r\n"
+            = "c\r\n"
+            . "foo: bar\r\n"
             . "\r\n"
+            . "\r\n"
+            . "2c\r\n"
             . "bar: baz\r\n"
             . ":this is a comment\r\n"
             . "emptyfield\r\n"
+            . "\r\n"
             . "\r\n";
         $this->assertEquals($shouldBe, $output);
     }

@@ -62,7 +62,7 @@ class Chunked extends \Bullet\Response
 
         if (!headers_sent()) {
             $this->header('Transfer-Encoding', 'chunked');
-            $this->header('Content-Encoding', 'none');
+            $this->header('Content-Encoding', 'identity');
 
             $this->sendStatus();
             $this->sendHeaders();

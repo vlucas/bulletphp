@@ -99,17 +99,33 @@ Create `index.php` (use the minimal example below to get started)
     <?php
     require __DIR__ . '/vendor/autoload.php';
 
-    // Your App
+    /* Simply build the application around your URLs */
     $app = new Bullet\App();
+
     $app->path('/', function($request) {
         return "Hello World!";
     });
+    $app->path('/foo', function($request) {
+        return "Bar!";
+    }); 
 
-    // Run the app! (takes $method, $url or Bullet\Request object)
-    echo $app->run(new Bullet\Request());
+    /* Run the app! (takes $method, $url or Bullet\Request object)
+     * run() always return a \Bullet\Response object (or throw an exception) */
 
+    $app->run(new Bullet\Request())->send();
 
-Use an `.htaccess` file for mod_rewrite (if you're using Apache)
+This application can be placed into your server's document root. (Make sure it 
+is correctly configured to serve php applications.) If `index.php` is in the 
+document root on your local host, the application may be called like this:
+
+    http://localhost/index.php?u=/
+
+and 
+
+    http://localhost/index.php?u=/foo
+
+If you're using Apache, use an `.htaccess` file to beautify the URLs. You need 
+mod_rewrite to be installed and enabled.
 
     <IfModule mod_rewrite.c>
       RewriteEngine On
@@ -120,6 +136,46 @@ Use an `.htaccess` file for mod_rewrite (if you're using Apache)
       RewriteRule ^(.*)$ index.php?u=$1 [L,QSA,B]
     </IfModule>
 
+With this file in place Apache will pass the request URI to `index.php` using 
+the $_GET['u'] parameter. This works in subdirectories *as expected* i.e. you 
+don't have to explicitly take care of removing the path prefix e.g. if you use 
+mod_userdir, or just install a Bullet application under an existing web app to 
+serve an API or simple, quick dynamic pages. Now your application will answer to these pretty urls:
+
+    http://localhost/
+
+and
+
+    http://localhost/foo
+
+NGinx also has a `rewrite` command, and can be used to the same end:
+
+    server {
+        # ...
+        location / {
+            # ...
+            rewrite ^/(.*)$ /index.php?u=/$1;
+            try_files $uri $uri/ =404;
+            # ...
+        }
+        # ...
+    }
+
+If the Bullet application is inside a subdirectory, you need to modify the
+`rewrite` line to serve it correctly:
+
+    server {
+        # ...
+        location / {
+            rewrite ^/bulletapp/(.*)$ /bulletapp/index.php?u=/$1;
+            try_files $uri $uri/ =404;
+        }
+        # ...
+    }
+
+Note that if you need to serve images, stylesheets, or javascript too, you
+need to add a `location` for the static root directory *without* the `reqrite`
+to avoid passing those URLs to index.php.
 
 View it in your browser!
 

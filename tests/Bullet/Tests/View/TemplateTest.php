@@ -99,9 +99,11 @@ class TemplateTest extends \PHPUnit_Framework_TestCase
         $app = new Bullet\App(array(
             'template.cfg' => array('path' => $this->templateDir)
         ));
-        $app->path('template-test', function($request) use($app) {
-            $app->get(function($request) use($app) {
-                return $app->template('test');
+        $app->path('', function() {
+            $this->path('template-test', function($request) {
+                $this->get(function($request) {
+                    return $this->template('test');
+                });
             });
         });
         $tpl = $app->run(new \Bullet\Request('GET', 'template-test'));
@@ -127,17 +129,19 @@ class TemplateTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals('<div><p>Test</p></div>', $tpl2->content());
     }
 
-    /**
-     * @expectedException \Exception
-     */
     public function testExceptionThrownInTemplate()
     {
         $app = new Bullet\App();
-        $app->path('test', function() use($app) {
-            return $app->template('exception');
+
+        $app->path('', function() {
+            $this->path('test', function() {
+                return $this->template('exception');
+            });
         });
 
         $res = $app->run(new \Bullet\Request('GET', '/test/'));
+
+        $this->assertEquals(500, $res->status());
     }
 
     public function testTemplateHandlesExceptionThrownInToString()
@@ -149,9 +153,13 @@ class TemplateTest extends \PHPUnit_Framework_TestCase
     public function testTemplateDoesNotDoubleRender()
     {
         $app = new Bullet\App();
-        $app->path('renderCount', function($request) use($app) {
-            return $app->template('renderCount');
+
+        $app->path('', function() {
+            $this->path('renderCount', function() {
+                return $this->template('renderCount');
+            });
         });
+
         $res = $app->run(new \Bullet\Request('GET', '/renderCount/'));
 
         $this->assertEquals('1', $res->content());
@@ -160,11 +168,15 @@ class TemplateTest extends \PHPUnit_Framework_TestCase
     public function testTemplateRenderCacheCanBeCleared()
     {
         $app = new Bullet\App();
-        $app->path('renderCount', function($request) use($app) {
-            $tpl = $app->template('renderCount');
-            $rendered = $tpl->content();
-            return $tpl->clearCachedContent();
+
+        $app->path('', function() {
+            $this->path('renderCount', function() {
+                $tpl = $this->template('renderCount');
+                $rendered = $tpl->content();
+                return $tpl->clearCachedContent();
+            });
         });
+
         $res = $app->run(new \Bullet\Request('GET', '/renderCount/'));
 
         $this->assertEquals('3', $res->content());
@@ -175,13 +187,18 @@ class TemplateTest extends \PHPUnit_Framework_TestCase
         Template::config(array('path_layouts' => $this->templateDir . 'layouts/'));
 
         $app = new Bullet\App();
-        $app->path('variableSet', function($request) use($app) {
-            return $app->template('variableSet', array('variable' => 'one'))
-                ->layout('div');
+
+        $app->path('', function() {
+            $this->path('variableSet', function() {
+                return $this->template('variableSet', array('variable' => 'one'))
+                    ->layout('div');
+            });
         });
+
         $app->on('beforeResponseHandler', function(\Bullet\Request $request, \Bullet\Response $response, $rawResponse) use($app) {
             $rawResponse->set('variable', 'two')->layout(false);
         });
+
         $res = $app->run(new \Bullet\Request('GET', '/variableSet/'));
 
         $this->assertEquals('two', $res->content());

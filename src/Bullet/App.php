@@ -1,5 +1,4 @@
 <?php
-
 namespace Bullet;
 
 use Pimple\Container;
@@ -78,7 +77,6 @@ class App extends Container
 				}
 				// Try to find a callback array for the current URI part
                 if (array_key_exists('path', $this->currentCallbacks) && array_key_exists($part, $this->currentCallbacks['path'])) {
-					//print "PATH\n";
 					// Let $c be the callback that has to be run now.
 					$c = $this->currentCallbacks['path'][$part];
 
@@ -95,7 +93,6 @@ class App extends Container
                 }
 				// Try to find a param match
                 elseif (array_key_exists('param', $this->currentCallbacks)) {
-					//print "PARAM \n";
 					// Let $c be the callback that has to be run now.
 					// This needs a linear search trhough the param filters
 					$c = null;
@@ -120,7 +117,6 @@ class App extends Container
 						return new Response(null, 404);
 					}
                 } else {
-					//print "404\n";
 					return new Response(null, 404);
 				}
 
@@ -141,14 +137,12 @@ class App extends Container
             if ($response instanceOf Response) {
                 return $response;
             }
-            //print "DONE";
 
             // TODO: formats?
             //return new Response(406); // Not acceptable format
 
             return new Response(null, 501); // Got no error, but got no response either. This is "Not Implemented".
         } catch (\Exception $e) {
-			//var_dump($e->getMessage());
             if ($response instanceOf \Bullet\Response) {
                 $response->status(500);
             } else {

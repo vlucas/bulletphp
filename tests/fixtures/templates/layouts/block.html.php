@@ -1,2 +1,2 @@
-<?php echo $view->block('js'); ?>
+<?php $view->block('js')->sendBody(); ?>
 <div><?php echo $yield; ?></div>

@@ -422,13 +422,4 @@ class Response
         }
         $this->sendBody();
     }
-
-
-    /**
-     * Send HTTP response on string conversion
-     */
-    public function __toString()
-    {
-        return $this->content();
-    }
 }

@@ -80,7 +80,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
             });
         });
 
-        $collect = (string) $app->run(new Bullet\Request('GET', '/test/foo/'));
+        $collect = $app->run(new Bullet\Request('GET', '/test/foo/'))->content();
 
         $expect = 'foo';
         $this->assertEquals($expect, $collect);

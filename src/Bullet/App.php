@@ -278,19 +278,6 @@ class App extends Container
         // TODO: is this really necessary?
     }
 
-    /**
-     * Return instance of Bullet\View\Template
-     *
-     * @param string $name Template name
-     * @param array $params Array of params to set
-     */
-    public function template($name, array $params = array())
-    {
-        $tpl = new View\Template($name);
-        $tpl->set($params);
-        return $tpl;
-    }
-
     public static function paramInt()
     {
 		return function($value) {

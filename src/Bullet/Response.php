@@ -117,7 +117,7 @@ class Response
 
 
     /**
-     * Set HTTP status to return
+     * Set or return HTTP status to return
      *
      * @param int $status HTTP status code
      */
@@ -127,6 +127,21 @@ class Response
             return $this->_status;
         }
         $this->_status = $status;
+        return $this;
+    }
+
+
+    /**
+     * Set or return the exception that caused this particular Response
+     *
+     * If the reason of this response is not an exception, it returns null.
+     */
+    public function exception($exception = null)
+    {
+        if (null === $exception) {
+            return $this->_exception;
+        }
+        $this->_exception = $exception;
         return $this;
     }
 
@@ -200,6 +215,8 @@ class Response
             return $this;
         }
     }
+
+
     public function appendContent($content)
     {
         $this->_content .= $content;
@@ -390,7 +407,7 @@ class Response
      */
     public function sendBody()
     {
-        echo $this->_content;
+        print $this->content();
     }
 
 
@@ -399,7 +416,11 @@ class Response
      */
     public function send()
     {
-        echo $this; // Executes __toString below
+        if(!headers_sent()) {
+            $this->sendStatus();
+            $this->sendHeaders();
+        }
+        $this->sendBody();
     }
 
 
@@ -408,25 +429,6 @@ class Response
      */
     public function __toString()
     {
-        // Get body content to return
-        try {
-            $content = (string) $this->content();
-        } catch(\Exception $e) {
-            $content = (string) $e;
-            $this->status(500);
-        }
-
-        // Write and close session
-        if(session_id()) {
-            session_write_close();
-        }
-
-        // Send headers if not already sent
-        if(!headers_sent()) {
-            $this->sendStatus();
-            $this->sendHeaders();
-        }
-
-        return $content;
+        return $this->content();
     }
 }

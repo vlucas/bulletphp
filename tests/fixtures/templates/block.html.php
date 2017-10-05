@@ -1,5 +1,4 @@
-<p>Test</p>
-<?php
+<p>Test</p><?php
 $view->block('js')->content(function() {
 ?>
 <script src='one.js'></script>

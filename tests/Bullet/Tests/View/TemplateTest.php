@@ -102,7 +102,7 @@ class TemplateTest extends \PHPUnit_Framework_TestCase
         $app->path('', function() {
             $this->path('template-test', function($request) {
                 $this->get(function($request) {
-                    return $this->template('test');
+                    return new \Bullet\View\Template('test');
                 });
             });
         });
@@ -135,19 +135,22 @@ class TemplateTest extends \PHPUnit_Framework_TestCase
 
         $app->path('', function() {
             $this->path('test', function() {
-                return $this->template('exception');
+                return new \Bullet\View\Template('exception');
             });
         });
 
         $res = $app->run(new \Bullet\Request('GET', '/test/'));
 
-        $this->assertEquals(500, $res->status());
-    }
+        // The template isn't rendered at this point, so everything should look peachy.
+        $this->assertEquals(200, $res->status());
 
-    public function testTemplateHandlesExceptionThrownInToString()
-    {
-        $tpl = new Template('exception');
-        $this->assertContains('Exception thrown inside a template! Oh noes!', (string) $tpl);
+        // Render the template, and let it blow up.
+        $c = $res->content();
+
+        // The template should contain the exception, and the status should be the default 500
+        $this->assertEquals(500, $res->status());
+
+        // And the content is the standard status text
     }
 
     public function testTemplateDoesNotDoubleRender()
@@ -156,7 +159,7 @@ class TemplateTest extends \PHPUnit_Framework_TestCase
 
         $app->path('', function() {
             $this->path('renderCount', function() {
-                return $this->template('renderCount');
+                return new \Bullet\View\Template('renderCount');
             });
         });
 
@@ -171,8 +174,9 @@ class TemplateTest extends \PHPUnit_Framework_TestCase
 
         $app->path('', function() {
             $this->path('renderCount', function() {
-                $tpl = $this->template('renderCount');
-                $rendered = $tpl->content();
+                
+                $tpl = new \Bullet\View\Template('renderCount');
+                $tpl->content();
                 return $tpl->clearCachedContent();
             });
         });
@@ -182,7 +186,7 @@ class TemplateTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals('3', $res->content());
     }
 
-    public function testEventBeforeResponseHandler()
+    public function testTemplateResponseCanBeModifiedAfterTheFact()
     {
         Template::config(array('path_layouts' => $this->templateDir . 'layouts/'));
 
@@ -190,17 +194,16 @@ class TemplateTest extends \PHPUnit_Framework_TestCase
 
         $app->path('', function() {
             $this->path('variableSet', function() {
-                return $this->template('variableSet', array('variable' => 'one'))
+                return (new \Bullet\View\Template('variableSet'))
+                    ->set('variable', 'one')
                     ->layout('div');
             });
         });
 
-        $app->on('beforeResponseHandler', function(\Bullet\Request $request, \Bullet\Response $response, $rawResponse) use($app) {
-            $rawResponse->set('variable', 'two')->layout(false);
-        });
+        $rsp = $app->run(new \Bullet\Request('GET', '/variableSet/'));
 
-        $res = $app->run(new \Bullet\Request('GET', '/variableSet/'));
+        $rsp->set('variable', 'two')->layout(false);
 
-        $this->assertEquals('two', $res->content());
+        $this->assertEquals('two', $rsp->content());
     }
 }

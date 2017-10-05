@@ -443,7 +443,7 @@ class App extends Container
     public function response()
     {
         //setter
-        if(func_num_args()==2){
+        if(func_num_args()>=2){
             //2 args setter
             list($statusCode, $content) = func_get_args();
             $this->_response = $this->responseFactory($content, $statusCode);

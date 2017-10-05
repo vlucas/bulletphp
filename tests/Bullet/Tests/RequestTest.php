@@ -345,7 +345,7 @@ class RequestTest extends \PHPUnit_Framework_TestCase
         $res = $app->run($req);
         $this->assertEquals('CONTENT', $res->content());
         $this->assertEquals('public, max-age=3600', $res->header('Cache-Control'));
-        $this->assertEquals(gmdate("D, d M Y H:i:s", time()+$cacheTime), $res->header('Expires'));
+        $this->assertEquals(gmdate("D, d M Y H:i:s", $currentTime+$cacheTime), $res->header('Expires'));
     }
 
     function testGetWithQueryString()

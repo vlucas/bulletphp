@@ -513,7 +513,8 @@ class AppTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals(null, $response->content());
     }
 
-    public function testCustomHttpStatusHandler()
+    // TODO: this needs to be documented
+    public function testResponseContentCanBeChangedAfterTheFact()
     {
         $app = new Bullet\App();
         $app->path('', function() use($app) {
@@ -525,34 +526,33 @@ class AppTest extends \PHPUnit_Framework_TestCase
 			});
 		});
 
-        // Register custom handler
-        $app->on(500, function($request, $response) {
-            $response->status(200)->content("Intercepted 500 Error");
-        });
-
         $response = $app->run(new Bullet\Request('GET', 'testhandler'));
+
+        if ($response->status() === 500) {
+            $response->status(200)->content("Intercepted 500 Error");
+        }
+
         $this->assertEquals(200, $response->status());
         $this->assertEquals("Intercepted 500 Error", $response->content());
     }
 
-    public function testCustomHttpStatusHandlerKeepingContent()
+    public function testModifyingResponseStatusKeepsContent()
     {
         $app = new Bullet\App();
         $app->path('', function() use($app) {
 			$app->path('testhandler', function() use($app) {
-				// GET
 				$app->get(function($request) use($app) {
-					return new \Bullet\Response(500, "Oh Snap!");
+					return new \Bullet\Response("Oh Snap!", 500);
 				});
 			});
 		});
 
-        // Register custom handler
-        $app->on(500, function($request, $response) {
-            $response->status(204);
-        });
-
         $response = $app->run(new Bullet\Request('GET', 'testhandler'));
+
+        if ($response->status() === 500) {
+            $response->status(204);
+        }
+
         $this->assertEquals(204, $response->status());
         $this->assertEquals("Oh Snap!", $response->content());
     }
@@ -658,107 +658,6 @@ class AppTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals('foobar', $response->content());
     }
 
-    public function testUrlHelperReturnsCurrentPathWhenCalledWithNoArguments()
-    {
-        $app = new Bullet\App();
-        $app->path('', function() use($app) {
-			$app->path('test', function($request) use($app) {
-				$collect[] = 'test';
-				$app->path('foo', function() use($app) {
-					return $app->url();
-				});
-			});
-		});
-
-        $response = $app->run(new Bullet\Request('GET', '/test/foo/'));
-        $this->assertEquals(200, $response->status());
-        $this->assertEquals('cli:/test/foo', $response->content());
-    }
-
-    public function testUrlHelperReturnsRelativePath()
-    {
-        $app = new Bullet\App();
-        $app->path('', function() use($app) {
-			$app->path('test', function($request) use($app) {
-				$collect[] = 'test';
-				$app->path('foo', function() use($app) {
-					return $app->url('./blogs');
-				});
-			});
-		});
-
-        $response = $app->run(new Bullet\Request('GET', '/test/foo/'));
-        $this->assertEquals(200, $response->status());
-        $this->assertEquals('cli:/test/foo/blogs', $response->content());
-    }
-
-    public function testUrlHelperReturnsRelativePathWithoutRepeating()
-    {
-        $app = new Bullet\App();
-        $app->path('', function() use($app) {
-			$app->path('test', function($request) use($app) {
-				$collect[] = 'test';
-				$app->path('foo', function() use($app) {
-					return $app->url('./test/foo'); // Should not be 'test/foo/test/foo'
-				});
-			});
-		});
-
-        $response = $app->run(new Bullet\Request('GET', '/test/foo/'));
-        $this->assertEquals(200, $response->status());
-        $this->assertEquals('cli:/test/foo', $response->content());
-    }
-
-    public function testUrlHelperReturnsRelativePathWithoutRepeatingLastPortion()
-    {
-        $app = new Bullet\App();
-        $app->path('', function() use($app) {
-			$app->path('test', function($request) use($app) {
-				$app->path('foo', function() use($app) {
-					return $app->url('./foo'); // Should not be 'test/foo/foo'
-				});
-			});
-		});
-
-        $response = $app->run(new Bullet\Request('GET', '/test/foo/'));
-        $this->assertEquals(200, $response->status());
-        $this->assertEquals('cli:/test/foo', $response->content());
-    }
-
-    public function testUrlHelperReturnsRelativePathWithoutRepeatingBasePath()
-    {
-        $app = new Bullet\App();
-        $app->path('', function() use($app) {
-			$app->path('events', function($request) use($app) {
-				return $app->url('./events/42'); // Should not be 'events/events/42' or just 'events'
-			});
-		});
-
-        $response = $app->run(new Bullet\Request('GET', '/events/'));
-        $this->assertEquals(200, $response->status());
-        $this->assertEquals('cli:/events/42', $response->content());
-    }
-
-    public function testUrlHelperReturnsGivenPath()
-    {
-        $app = new Bullet\App();
-        $app->path('', function() use($app) {
-			$app->path('test', function($request) use($app) {
-				$collect[] = 'test';
-				$app->path('foo', function() use($app) {
-					return $app->url('blog/42/edit');
-				});
-				$app->path('foo2', function() {
-					$collect[] = 'foo2';
-				});
-			});
-		});
-
-        $response = $app->run(new Bullet\Request('GET', '/test/foo/'));
-        $this->assertEquals(200, $response->status());
-        $this->assertEquals('cli:/blog/42/edit', $response->content());
-    }
-
     public function testStatusOnResponseObjectReturnsCorrectStatus()
     {
         $app = new Bullet\App();
@@ -812,44 +711,27 @@ class AppTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals('yep', $response->content());
     }
 
-    public function testExceptionHandlerAllowsStatusOtherThan500()
+    public function testExceptionResponsesCanBeManipulated()
     {
         $app = new Bullet\App();
-        $app->on('InvalidArgumentException', function(Request $request, Response $response, \Exception $e) {
-            $response->status(200)->content('There is a pankake on my head. Your argument is invalid.');
-        });
-        $app->path('', function() use($app) {
-			$app->path('test', function($request) use($app) {
+
+        $app->path('', function() {
+			$this->path('test', function($request) use($app) {
 				throw new \InvalidArgumentException("This is a specific error message here!");
 			});
 		});
 
         $response = $app->run(new Bullet\Request('POST', 'test'));
+
+        if ($response->exception() instanceof \InvalidArgumentException) {
+            $response->status(200)->content('There is a pankake on my head. Your argument is invalid.');
+        }
+
         $this->assertEquals(200, $response->status());
         $this->assertEquals('There is a pankake on my head. Your argument is invalid.', $response->content());
     }
 
-    public function testEventHandlerBefore()
-    {
-        $app = new Bullet\App();
-        $app->path('', function() use($app) {
-			$app->path('testhandler', function() use($app) {
-				$app->post(function($request) use($app) {
-					return $request->foo;
-				});
-			});
-		});
-
-        // Register custom handler
-        $app->on('before', function($request, $response) {
-            $request->foo = 'bar';
-        });
-
-        $response = $app->run(new Bullet\Request('POST', 'testhandler'));
-        $this->assertEquals('bar', $response->content());
-    }
-
-    public function testEventHandlerAfter()
+    public function testResponseContentCanBeSetAfterTheFact()
     {
         $app = new Bullet\App();
         $app->path('', function() use($app) {
@@ -860,12 +742,9 @@ class AppTest extends \PHPUnit_Framework_TestCase
 			});
 		});
 
-        // Register custom handler
-        $app->on('after', function($request, $response) {
-            $response->content($response->content() . 'AFTER');
-        });
-
         $response = $app->run(new Bullet\Request('PUT', 'testhandler'));
+        $response->content($response->content() . 'AFTER');
+
         $this->assertEquals('testAFTER', $response->content());
     }
 

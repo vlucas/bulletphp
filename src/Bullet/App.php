@@ -48,7 +48,7 @@ class App extends Container
         $response = null;
         try {
             // Remove empty path elements
-            $uri = $request->url();
+            $uri = $request->path();
             $parts = [''];
             foreach (explode('/', $uri) as $part) {
                 if ($part != '') {
@@ -268,14 +268,6 @@ class App extends Container
     public function format($formats, \Closure $callback)
     {
         return $this;
-    }
-
-    /**
-     * Build URL for path
-     */
-    public function url($path = null)
-    {
-        // TODO: is this really necessary?
     }
 
     public static function paramInt()

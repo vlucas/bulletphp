@@ -19,7 +19,7 @@ class RequestTest extends \PHPUnit_Framework_TestCase
     function testUrl()
     {
         $r = new Bullet\Request('DELETE', '/foo/bar/');
-        $this->assertEquals('/foo/bar/', $r->url());
+        $this->assertEquals('/foo/bar/', $r->path());
     }
 
     function testFormatDefaultsToNull()
@@ -366,6 +366,40 @@ class RequestTest extends \PHPUnit_Framework_TestCase
         $first_request  = new Bullet\Request('GET', '/', array('foo' => 'bar'));
         $second_request = new Bullet\Request('GET', '/', array());
         $this->assertNull($second_request->foo);
+    }
+
+    public function testUrlHelperReturnsRequestedUrl()
+    {
+        $app = new Bullet\App();
+        $app->path('', function() use($app) {
+			$app->path('test', function($request) use($app) {
+				$collect[] = 'test';
+				$app->path('foo', function($request) use($app) {
+					return $request->url();
+				});
+			});
+		});
+
+        $response = $app->run(new Bullet\Request('GET', '/test/foo'));
+        $this->assertEquals(200, $response->status());
+        $this->assertEquals('cli:/test/foo', $response->content());
+    }
+
+    public function testAbsolutePathsCanBeGeneratedByAppendingRelativePathsToRequestUrl()
+    {
+        $app = new Bullet\App();
+        $app->path('', function() {
+			$this->path('test', function() {
+				$collect[] = 'test';
+				$this->path('foo', function($request) {
+					return $request->url() . '/blogs';
+				});
+			});
+		});
+
+        $response = $app->run(new Bullet\Request('GET', '/test/foo'));
+        $this->assertEquals(200, $response->status());
+        $this->assertEquals('cli:/test/foo/blogs', $response->content());
     }
 }
 

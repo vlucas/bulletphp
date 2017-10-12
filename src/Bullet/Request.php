@@ -14,7 +14,7 @@ class Request
 {
     // Request URL
     protected $_method;
-    protected $_url;
+    protected $_path;
     protected $_format = null;
 
     // Request parameters
@@ -67,7 +67,7 @@ class Request
      * @param array  Request parameters
      * @param array  HTTP Headers
      */
-    public function __construct($method = null, $url = null, array $params = array(), array $headers = array(), $rawBody = null)
+    public function __construct($method = null, $path = null, array $params = array(), array $headers = array(), $rawBody = null)
     {
         // Die magic_quotes, just die...
         if(get_magic_quotes_gpc()) {
@@ -89,8 +89,8 @@ class Request
         }
 
         // Set URL
-        if($url !== null) {
-            $this->url($url);
+        if($path !== null) {
+            $this->path($path);
         }
 
         // Set params if given
@@ -169,59 +169,54 @@ class Request
         }
     }
 
-
     /**
      * Return requested URL path
      *
      * Works for HTTP(S) requests and CLI requests using the -u flag for URL dispatch emulation
+     * 
+     * Accepts paths with query string, and sets params. TODO: This sould be done separately.
      *
      * @return string Requested URL path segement
      */
-    public function url($url = null)
+    public function path($path = '')
     {
-        if(null === $this->_url) {
-            if(null !== $url) {
-                // SET url with what's given
-                $requestUrl = $url;
-            } else {
-                // AUTO-DETECT url
-                if($this->isCli()) {
-                    // CLI request
-                    $cliArgs = getopt("u:");
-
-                    $requestUrl = isset($cliArgs['u']) ? $cliArgs['u'] : '/';
-                    $qs = parse_url($requestUrl, PHP_URL_QUERY);
-                    $cliRequestParams = array();
-                    parse_str($qs, $cliRequestParams);
-
-                    // Set parsed query params back on request object
-                    $this->setParams($cliRequestParams);
-
-                } else {
-                    // HTTP request
-                    if($url = $this->query('u')) {
-                        $requestUrl = $url;
-                    } else {
-                        $requestUrl = $this->uri();
-                    }
-                }
-            }
-
-            // Set requestUrl and remove query string if present so router can parse it as expected
-            if($qsPos = strpos($requestUrl, '?')) {
-                $fullUrl = $requestUrl;
-                $requestUrl = substr($requestUrl, 0, $qsPos);
-                parse_str(substr($fullUrl, $qsPos+1), $urlRequestParams);
-                // Set parsed query params back on request object
-                $this->setParams($urlRequestParams);
-            }
-
-            $this->_url = $requestUrl;
+        if(null !== $this->_path) {
+            return $this->_path;
         }
 
-        return $this->_url;
+        if('' === $path) {
+            if($this->isCli()) {
+                $cliArgs = getopt("u:");
+                $path = isset($cliArgs['u']) ? $cliArgs['u'] : '/';
+            } else {
+                if($path != $this->query('u')) {
+                    $path = $this->uri();
+                }
+            }
+        }
+
+        // Set requestUrl and remove query string if present so router can parse it as expected
+        if($qsPos = strpos($path, '?')) {
+            $qs = parse_url($path, PHP_URL_QUERY);
+            parse_str($qs, $cliRequestParams);
+            $this->setParams($cliRequestParams);
+            $path = substr($path, 0, $qsPos);
+        }
+
+        return $this->_path = $path;
     }
 
+    /**
+     * Return requested URL 
+     */
+    public function url()
+    {
+        if ($this->isCli()) {
+            return $this->scheme() . ':' . $this->path();
+        } else {
+            return $this->scheme() . '://' . $this->host() . $this->path();
+        }
+    }
 
     /**
      * Access values contained in the superglobals as public members
@@ -536,9 +531,9 @@ class Request
         }
 
         // Detect extension and assign it as the requested format (overrides 'Accept' header)
-        $dotPos = strrpos($this->url(), '.');
+        $dotPos = strrpos($this->path(), '.');
         if($dotPos !== false) {
-            $ext = substr($this->url(), $dotPos+1);
+            $ext = substr($this->path(), $dotPos+1);
             $this->_format = $ext;
         }
 

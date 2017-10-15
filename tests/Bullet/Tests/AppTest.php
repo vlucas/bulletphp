@@ -557,13 +557,13 @@ class AppTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals("Oh Snap!", $response->content());
     }
 
-    public function testPathExecutionIgnoresExtension()
+    public function testPathExecutionObservesExtensionsIfNoFormatHandlersArePresent()
     {
         $app = new Bullet\App();
         $app->path('', function() use($app) {
 			$app->path('test', function($request) use($app) {
 				$collect[] = 'test';
-				$app->path('foo', function() use($app) {
+				$app->path('foo.json', function() use($app) {
 					return 'Not JSON';
 				});
 			});
@@ -581,8 +581,9 @@ class AppTest extends \PHPUnit_Framework_TestCase
 			$app->path('test', function($request) use($app) {
 				$collect[] = 'test';
 				$app->path('foo', function() use($app) {
+                    return "OK";
 					$app->format('json', function() use($app) {
-						return array('foo' => 'bar', 'bar' => 'baz');
+						return ['foo' => 'bar', 'bar' => 'baz'];
 					});
 					$app->format('html', function() use($app) {
 						return '<tag>Some HTML</tag>';
@@ -593,7 +594,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
 
         $response = $app->run(new Bullet\Request('GET', '/test/foo.json'));
         $this->assertEquals(200, $response->status());
-        $this->assertEquals(json_encode(array('foo' => 'bar', 'bar' => 'baz')), $response->content());
+        $this->assertEquals(json_encode(['foo' => 'bar', 'bar' => 'baz']), $response->content());
     }
 
     public function testPathWithExtensionAndFormatHandlersButNoMatchingFormatHandlerReturns406()
@@ -690,25 +691,20 @@ class AppTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals(201, $actual->status());
     }
 
-    public function testExceptionsAreCaughtWhenCustomHandlerIsRegistered()
+    /**
+     * @expectedException \Exception
+     * @expectedExceptionMessage This is a specific error message here!
+     */
+    public function testExceptionIsNotCoughtWhenCallingRun_()
     {
         $app = new Bullet\App();
-        $app->exception(function(Request $request, Response $response, \Exception $e) {
-            if($e instanceof \Exception) {
-                $response->content('yep');
-            } else {
-                $response->content('nope');
-            }
-        });
         $app->path('', function() use($app) {
 			$app->path('test', function($request) use($app) {
 				throw new \Exception("This is a specific error message here!");
 			});
 		});
 
-        $response = $app->run(new Bullet\Request('GET', 'test'));
-        $this->assertEquals(500, $response->status());
-        $this->assertEquals('yep', $response->content());
+        $response = $app->run_(new Bullet\Request('GET', 'test'));
     }
 
     public function testExceptionResponsesCanBeManipulated()

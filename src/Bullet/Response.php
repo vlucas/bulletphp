@@ -19,6 +19,7 @@ class Response
     protected $_contentType = "text/html";
     protected $_protocol = "HTTP/1.1";
     protected $_headers;
+    protected $_exception;
 
 
     /**

@@ -90,24 +90,19 @@ class App extends Container
             // Remove empty path elements
             $uri = $request->path();
             $parts = [''];
-            // with formats a path is no longer a list, but a tree
-            // instead with branches begin alternative choices
-            // e.g. /foo/bar.js can bee ["foo","bar.js"] path with no
-            // format, or ["foo","bar"] with "js" as the format
             foreach (explode('/', $uri) as $part) {
                 if ($part != '') {
                     $parts[] = $part;
                 }
             }
 
-            // TODO: detect extension
-
             // Walk through the URI and execute path callbacks
-            $cp = count($parts);
+            $pc = count($parts);
             $i = 0;
             $check_format = false;
             foreach ($parts as $part) {
                 ++$i;
+                // --------------------------------------------------------------- refactor
                 // Try to find a callback array for the current URI part
                 if (array_key_exists('path', $this->currentCallbacks) && array_key_exists($part, $this->currentCallbacks['path'])) {
                     // Let $c be the callback that has to be run now.
@@ -137,28 +132,29 @@ class App extends Container
                             return $response;
                         }
                     } else {
-                        if ($i !== $cp) {
+                        if ($i !== $pc) {
                             return new Response(null, 404); // The last $part might match a format
                         } else {
                             $check_format = true;
                         }
                     }
                 } else {
-                    if ($i !== $cp) {
+                    if ($i !== $pc) {
                         return new Response(null, 404); // The last $part might match a format
                     } else {
                         $check_format = true;
                     }
                 }
+                // ----------------------------------------------------------------------
             }
 
             if ($check_format) {
-                // TODO: needs a catch-all format
-                //return new Response("Yeehaw");
                 $_ = explode('.', $part);
                 if (count($_) > 1) {
                     $format_part = $_[0];
                     $format_ext = $_[1];
+                    // TODO: call the factored-out part here too for $format_part
+                    // TODO: check for a specific, then a catch-all format
                 } else {
                     return new Response(null, 404); // This is not an URL with an extension
                 }
@@ -180,7 +176,6 @@ class App extends Container
                 return $response;
             }
 
-            // TODO: formats?
             //return new Response(406); // Not acceptable format
 
             return new Response(null, 501); // Got no error, but got no response either. This is "Not Implemented".
@@ -232,7 +227,7 @@ class App extends Container
     /**
      * Handle HTTP content type as output format
      *
-     * @param string $format HTTP content type format to handle for
+     * @param string $format extension to handle
      * @param \Closure $callback Closure to execute to handle specified format
      */
     public function format($format, \Closure $callback)

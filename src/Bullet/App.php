@@ -24,12 +24,17 @@ class App extends Container
             return $response;
         }
 
+        // TODO: should we handle response types in configurable handlers?
         if (is_string($response)) {
             return new Response($response, 200);
         }
 
         if (is_int($response)) {
             return new Response(null, $response);
+        }
+
+        if (is_array($response)) {
+            return new Response(json_encode($response), 200);
         }
 
         return null;
@@ -137,9 +142,7 @@ class App extends Container
             $check_format = false;
             foreach ($parts as $part) {
                 ++$i;
-
                 $response = $this->matchCallbacks($request, $part);
-
                 if ($response instanceof Response) {
                     if ($response->status() == 404 && $i == $pc) {
                         // This is the last part, but here are no path or param callbacks. Must check format callbacks too.
@@ -161,7 +164,24 @@ class App extends Container
                     if ($response instanceof Response) {
                         return $response;
                     }
-                    // TODO: check for a specific, then a catch-all format
+
+                    // Try the specific, then the catch-all ('') format handler
+                    if (array_key_exists('format', $this->currentCallbacks)) {
+                        $c = null;
+                        if (array_key_exists($format_ext, $this->currentCallbacks['format'])) {
+                            $c = $this->currentCallbacks['format'][$format_ext];
+                        } elseif (array_key_exists('', $this->currentCallbacks['format'])) {
+                            $c = $this->currentCallbacks['format'][$format_ext];
+                        } else {
+                            return new Response(null, 406); // Not acceptable format
+                        }
+                        $this->currentCallbacks = [];
+                        $response = $this->executeCallback($c, [$request]);
+                        if ($response instanceof Response) {
+                            return $response;
+                        }
+                    }
+
                 } else {
                     return new Response(null, 404); // This is not an URL with an extension
                 }
@@ -182,8 +202,6 @@ class App extends Container
             if ($response instanceOf Response) {
                 return $response;
             }
-
-            //return new Response(406); // Not acceptable format
 
             return new Response(null, 501); // Got no error, but got no response either. This is "Not Implemented".
         } finally {

@@ -581,7 +581,6 @@ class AppTest extends \PHPUnit_Framework_TestCase
 			$app->path('test', function($request) use($app) {
 				$collect[] = 'test';
 				$app->path('foo', function() use($app) {
-                    return "OK";
 					$app->format('json', function() use($app) {
 						return ['foo' => 'bar', 'bar' => 'baz'];
 					});
@@ -614,7 +613,6 @@ class AppTest extends \PHPUnit_Framework_TestCase
 		});
 
         $response = $app->run(new Bullet\Request('GET', '/test/foo.xml'));
-        $this->assertEquals('Not Acceptable', $response->content());
         $this->assertEquals(406, $response->status());
     }
 
@@ -1266,4 +1264,3 @@ class TestHelper
         return "something";
     }
 }
-

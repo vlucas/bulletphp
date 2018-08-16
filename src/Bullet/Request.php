@@ -121,7 +121,7 @@ class Request
             // Use first 'accept' type as the default format
             $firstType = array_shift($accept);
             $formatAny = in_array($firstType, array(null, '*/*', '', '*'), true);
-            $this->format($formatAny ? null : $firstType);
+            $this->format($formatAny ? '' : $firstType);
         }
 
         // Properly handle PATCH, PUT, and DELETE requests, and POST requests with no params but post bodies
@@ -173,7 +173,7 @@ class Request
      * Return requested URL path
      *
      * Works for HTTP(S) requests and CLI requests using the -u flag for URL dispatch emulation
-     * 
+     *
      * Accepts paths with query string, and sets params. TODO: This sould be done separately.
      *
      * @return string Requested URL path segement
@@ -207,7 +207,7 @@ class Request
     }
 
     /**
-     * Return requested URL 
+     * Return requested URL
      */
     public function url()
     {
@@ -357,6 +357,20 @@ class Request
         return $this->_accept;
     }
 
+    /**
+     * Get an array of acceptable formats (list of file extensions)
+     */
+    public function formats()
+    {
+       $mt2ext = array_flip($this->_mimeTypes);
+       $r = [];
+       foreach ($this->accept() as $mt) {
+           if (array_key_exists($mt, $mt2ext)) {
+               $r[] = $mt2ext[$mt];
+           }
+       }
+       return $r;
+    }
 
     /**
     * Retrieve request parameters
@@ -700,7 +714,7 @@ class Request
 
     /**
      * Try to decode the raw request body as JSON and return it
-     * 
+     *
      * This method calls json_decode on raw() each time it's called,
      * so don't overindulge.
      */
@@ -829,12 +843,12 @@ class Request
             || $op != ''
             || strpos($ua, 'iphone') !== false
             || strpos($ua, 'android') !== false
-            || strpos($ua, 'iemobile') !== false 
+            || strpos($ua, 'iemobile') !== false
             || strpos($ua, 'kindle') !== false
-            || strpos($ua, 'sony') !== false 
-            || strpos($ua, 'symbian') !== false 
-            || strpos($ua, 'nokia') !== false 
-            || strpos($ua, 'samsung') !== false 
+            || strpos($ua, 'sony') !== false
+            || strpos($ua, 'symbian') !== false
+            || strpos($ua, 'nokia') !== false
+            || strpos($ua, 'samsung') !== false
             || strpos($ua, 'mobile') !== false
             || strpos($ua, 'windows ce') !== false
             || strpos($ua, 'epoc') !== false
@@ -937,7 +951,7 @@ class Request
 
     /**
      * Is this a Flash request?
-     * 
+     *
      * @return bool
      */
     public function isFlash()
@@ -989,4 +1003,3 @@ class Request
         return $this->_accept;
     }
 }
-

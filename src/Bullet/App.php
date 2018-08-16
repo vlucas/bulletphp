@@ -156,6 +156,7 @@ class App extends Container
 
             if ($check_format) {
                 $_ = explode('.', $part);
+
                 if (count($_) > 1) {
                     $format_part = $_[0];
                     $format_ext = $_[1];
@@ -165,25 +166,53 @@ class App extends Container
                         return $response;
                     }
 
+                    if (!array_key_exists('format', $this->currentCallbacks)) {
+                        // No format handlers are specified, can't do anything right now.
+                        return new Response(null, 404);
+                    }
+
                     // Try the specific, then the catch-all ('') format handler
-                    if (array_key_exists('format', $this->currentCallbacks)) {
-                        $c = null;
-                        if (array_key_exists($format_ext, $this->currentCallbacks['format'])) {
-                            $c = $this->currentCallbacks['format'][$format_ext];
-                        } elseif (array_key_exists('', $this->currentCallbacks['format'])) {
-                            $c = $this->currentCallbacks['format'][$format_ext];
-                        } else {
-                            return new Response(null, 406); // Not acceptable format
+                    $c = null;
+                    if (array_key_exists($format_ext, $this->currentCallbacks['format'])) {
+                        $c = $this->currentCallbacks['format'][$format_ext];
+                    } elseif (array_key_exists('', $this->currentCallbacks['format'])) {
+                        $c = $this->currentCallbacks['format'][''];
+                    } else {
+                        return new Response(null, 406); // Not acceptable format
+                    }
+                    $this->currentCallbacks = [];
+                    $response = $this->executeCallback($c, [$request]);
+                    if ($response instanceof Response) {
+                        return $response;
+                    }
+
+                } else {
+                    // Ok, no file extension, so try the formats decyphered from the "Accept" header
+
+                    if (!array_key_exists('format', $this->currentCallbacks)) {
+                        // No format handlers are specified, can't do anything right now.
+                        return new Response(null, 404);
+                    }
+
+                    $c = null;
+                    foreach ($request->formats() as $format) {
+                        if (array_key_exists($format, $this->currentCallbacks['format'])) {
+                            $c = $this->currentCallbacks['format'][$format];
+                            break;
                         }
+                    }
+                    if ($c == null && array_key_exists('', $this->currentCallbacks['format'])) {
+                        $c = $this->currentCallbacks['format'][''];
+                    }
+                    if ($c != null) {
                         $this->currentCallbacks = [];
                         $response = $this->executeCallback($c, [$request]);
                         if ($response instanceof Response) {
                             return $response;
                         }
+                    } else {
+                        return new Response(null, 404); // This is not an URL with an extension, or an appropriate Accept header
                     }
-
-                } else {
-                    return new Response(null, 404); // This is not an URL with an extension
                 }
             }
 
@@ -202,6 +231,9 @@ class App extends Container
             if ($response instanceOf Response) {
                 return $response;
             }
+
+            // TODO: the method handlers could still have installed format handlers,
+            // do we'll have to check those here again.
 
             return new Response(null, 501); // Got no error, but got no response either. This is "Not Implemented".
         } finally {

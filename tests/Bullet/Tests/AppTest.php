@@ -648,7 +648,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
 				return "foo";
 			});
 			$app->path('bar', function($request) use($app) {
-				$foo = $app->run(new Bullet\Request('GET', 'foo')); // $foo is now a `Bullet\Response` instance
+				$foo = $app->run_(new Bullet\Request('GET', 'foo')); // $foo is now a `Bullet\Response` instance
 				return $foo->content() . "bar";
 			});
 		});

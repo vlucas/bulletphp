@@ -31,6 +31,8 @@ class App extends Container
         if (is_int($response)) {
             return new Response(null, $response);
         }
+
+        return null;
     }
 
     /**
@@ -38,10 +40,10 @@ class App extends Container
      *
      * run() ALWAYS return a Response. Returning any other type or
      * throwing an exception is a bug.
-     * 
+     *
      * Internally run() calls run_() which MIGHT throw exceptions. These
      * exceptions are caught, and handled by respondToE(Exception $e).
-     * 
+     *
      * @param \Bullet\Request \Bullet\Request object
      * @return \Bullet\Response
      */
@@ -55,27 +57,60 @@ class App extends Container
     }
 
     /**
+     * Looks for and executes a callback for an URL part if there's any
+     */
+    protected function matchCallbacks($request, $part)
+    {
+        // Try to find a callback array for the current URI part
+        if (array_key_exists('path', $this->currentCallbacks) && array_key_exists($part, $this->currentCallbacks['path'])) {
+            // Let $c be the callback that has to be run now.
+            $c = $this->currentCallbacks['path'][$part];
+            $this->currentCallbacks = [];
+            return $this->executeCallback($c, [$request]);
+        }
+        // Try to find a param match
+        elseif (array_key_exists('param', $this->currentCallbacks)) {
+            // This needs a linear search trhough the param filters
+            $c = null;
+            foreach ($this->currentCallbacks['param'] as $filterCallbackTuple) {
+                if ($filterCallbackTuple[0]($part)) {
+                    $c = $filterCallbackTuple[1];
+                    break;
+                }
+            }
+            if ($c instanceOf \Closure) {
+                $this->currentCallbacks = [];
+                return $this->executeCallback($c, [$request, $part]);
+            } else {
+                return new Response(null, 404); // WARNING! The last $part might match a format.
+            }
+        } else {
+            return new Response(null, 404); // Same WARNING as above.
+        }
+    }
+
+    /**
      * Run app with given Request
      *
      * run_() either returns a Response, or throws an exception.
-     * 
+     *
      * It may be called manually from url handlers, or even in
      * index.php when the default exception handling method (respondToE)
      * is not suitable.
-     * 
+     *
      * The suggested method of calling the Bullet app from itself IS to
      * call run_() manually, since any exception thrown will
      * short-circuit the application and will end up being caught by
      * respondToE() in run() or by a user-defined try-catch in
      * index.php.
-     * 
+     *
      * The preferred method for custom exception-responses is NOT to
      * call run_() manually, but to call run(), and overwrite the
      * Response's content based on it's status().
-     * 
+     *
      * Internally run() calls run_() which MIGHT throw exceptions. These
      * exceptions are caught, and handled by respondToE(Exception $e).
-     * 
+     *
      * @param \Bullet\Request \Bullet\Request object
      * @return \Bullet\Response
      */
@@ -102,50 +137,18 @@ class App extends Container
             $check_format = false;
             foreach ($parts as $part) {
                 ++$i;
-                // --------------------------------------------------------------- refactor
-                // Try to find a callback array for the current URI part
-                if (array_key_exists('path', $this->currentCallbacks) && array_key_exists($part, $this->currentCallbacks['path'])) {
-                    // Let $c be the callback that has to be run now.
-                    $c = $this->currentCallbacks['path'][$part];
 
-                    $this->currentCallbacks = [];
-                    $response = $this->executeCallback($c, [$request]);
-                    if ($response instanceOf Response) {
+                $response = $this->matchCallbacks($request, $part);
+
+                if ($response instanceof Response) {
+                    if ($response->status() == 404 && $i == $pc) {
+                        // This is the last part, but here are no path or param callbacks. Must check format callbacks too.
+                        $check_format = true;
+                    } else {
+                        // This is not the last part, but we've got a Response, so run with it.
                         return $response;
                     }
                 }
-                // Try to find a param match
-                elseif (array_key_exists('param', $this->currentCallbacks)) {
-                    // Let $c be the callback that has to be run now.
-                    // This needs a linear search trhough the param filters
-                    $c = null;
-                    foreach ($this->currentCallbacks['param'] as $filterCallbackTuple) {
-                        if ($filterCallbackTuple[0]($part)) {
-                            $c = $filterCallbackTuple[1];
-                            break;
-                        }
-                    }
-                    if ($c instanceOf \Closure) {
-                        $this->currentCallbacks = [];
-                        $response = $this->executeCallback($c, [$request, $part]);
-                        if ($response instanceOf Response) {
-                            return $response;
-                        }
-                    } else {
-                        if ($i !== $pc) {
-                            return new Response(null, 404); // The last $part might match a format
-                        } else {
-                            $check_format = true;
-                        }
-                    }
-                } else {
-                    if ($i !== $pc) {
-                        return new Response(null, 404); // The last $part might match a format
-                    } else {
-                        $check_format = true;
-                    }
-                }
-                // ----------------------------------------------------------------------
             }
 
             if ($check_format) {
@@ -153,7 +156,11 @@ class App extends Container
                 if (count($_) > 1) {
                     $format_part = $_[0];
                     $format_ext = $_[1];
-                    // TODO: call the factored-out part here too for $format_part
+
+                    $response = $this->matchCallbacks($request, $format_part);
+                    if ($response instanceof Response) {
+                        return $response;
+                    }
                     // TODO: check for a specific, then a catch-all format
                 } else {
                     return new Response(null, 404); // This is not an URL with an extension
@@ -186,11 +193,11 @@ class App extends Container
 
     /**
      * Creates a Response from any exception
-     * 
+     *
      * If the exception is an instance of \Bullet\Response\Exception,
      * then the exception code is used as the status, and the message
      * (if not null) is used as the content.
-     * 
+     *
      * The response will contain the exception either way.
      */
     public function respondToE(\Exception $e)
@@ -214,7 +221,7 @@ class App extends Container
 
     /**
      * Param match has lower priority than path match
-     * 
+     *
      * e.g. if a path section matches, then the search concludes
      * the current segment and params won't even be searched for a
      * match.
@@ -321,7 +328,7 @@ class App extends Container
     }
 
     /**
-     * 
+     *
      * True = "1", "true", "on", "yes"
      * False = "0", "false", "off", "no"
      */

@@ -40,6 +40,22 @@ class Response
         $this->_headers = $headers;
     }
 
+    public static function make($content = null, $status = 200, array $headers = [])
+    {
+        // TODO: we should handle response types in configurable handlers.
+        if (is_string($content)) {
+            return new Response($content, 200, $headers);
+        }
+
+        if (is_int($content)) {
+            return new Response(null, $content, $headers);
+        }
+
+        if (is_array($content)) {
+            return new Response(json_encode($content), $status, $headers);
+        }
+        return null;
+    }
 
     /**
      * Set or get HTTP header

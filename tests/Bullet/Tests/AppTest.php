@@ -581,12 +581,14 @@ class AppTest extends \PHPUnit_Framework_TestCase
 			$app->path('test', function($request) use($app) {
 				$collect[] = 'test';
 				$app->path('foo', function() use($app) {
-					$app->format('json', function() use($app) {
-						return ['foo' => 'bar', 'bar' => 'baz'];
-					});
-					$app->format('html', function() use($app) {
-						return '<tag>Some HTML</tag>';
-					});
+                    $app->get(function() use($app) {
+                        $app->format('json', function() use($app) {
+    						return ['foo' => 'bar', 'bar' => 'baz'];
+    					});
+    					$app->format('html', function() use($app) {
+    						return '<tag>Some HTML</tag>';
+    					});
+                    });
 				});
 			});
 		});
@@ -602,12 +604,14 @@ class AppTest extends \PHPUnit_Framework_TestCase
         $app->path('', function() use($app) {
 			$app->path('test', function($request) use($app) {
 				$app->path('foo', function() use($app) {
-					$app->format('json', function() use($app) {
-						return array('foo' => 'bar', 'bar' => 'baz');
-					});
-					$app->format('html', function() use($app) {
-						return '<tag>Some HTML</tag>';
-					});
+                    $app->get(function () use($app) {
+                        $app->format('json', function() use($app) {
+    						return array('foo' => 'bar', 'bar' => 'baz');
+    					});
+    					$app->format('html', function() use($app) {
+    						return '<tag>Some HTML</tag>';
+    					});
+                    });
 				});
 			});
 		});
@@ -623,12 +627,12 @@ class AppTest extends \PHPUnit_Framework_TestCase
 			$app->path('posts', function($request) use($app) {
 				$app->get(function() use($app) {
 					$app->format('json', function() use($app) {
-						return array('listing' => 'something');
+						return ['listing' => 'something'];
 					});
 				});
 				$app->post(function($request) use($app) {
 					$app->format('json', function() use($app) {
-						return new \Bullet\Response(201, array('created' => 'something'));
+						return \Bullet\Response::make(['created' => 'something'], 201);
 					});
 				});
 			});
@@ -645,11 +649,11 @@ class AppTest extends \PHPUnit_Framework_TestCase
         $app = new Bullet\App();
         $app->path('', function() use($app) {
 			$app->path('foo', function($request) use($app) {
-				return "foo";
+				return 'foo';
 			});
 			$app->path('bar', function($request) use($app) {
 				$foo = $app->run_(new Bullet\Request('GET', 'foo')); // $foo is now a `Bullet\Response` instance
-				return $foo->content() . "bar";
+				return $foo->content() . 'bar';
 			});
 		});
         $response = $app->run(new Bullet\Request('GET', 'bar'));

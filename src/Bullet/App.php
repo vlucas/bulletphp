@@ -66,15 +66,8 @@ class App extends Container
      */
     protected function matchCallbacks($request, $part)
     {
-        // Try to find a callback array for the current URI part
-        if (array_key_exists('path', $this->currentCallbacks) && array_key_exists($part, $this->currentCallbacks['path'])) {
-            // Let $c be the callback that has to be run now.
-            $c = $this->currentCallbacks['path'][$part];
-            $this->currentCallbacks = [];
-            return $this->executeCallback($c, [$request]);
-        }
         // Try to find a param match
-        elseif (array_key_exists('param', $this->currentCallbacks)) {
+        if (array_key_exists('param', $this->currentCallbacks)) {
             // This needs a linear search trhough the param filters
             $c = null;
             foreach ($this->currentCallbacks['param'] as $filterCallbackTuple) {
@@ -145,7 +138,9 @@ class App extends Container
                 $response = $this->matchCallbacks($request, $part);
                 if ($response instanceof Response) {
                     if ($response->status() == 404 && $i == $pc) {
-                        // This is the last part, but here are no path or param callbacks. Must check format callbacks too.
+                        // This is the last part, but there are no path or param callbacks.
+                        // Must check for foo.bar URL format, therefore a "foo" path
+                        // handler and a "bar" format handler after method handlers
                         $check_format = true;
                     } else {
                         // This is not the last part, but we've got a Response, so run with it.
@@ -154,6 +149,7 @@ class App extends Container
                 }
             }
 
+            $format_ext = null;
             if ($check_format) {
                 $_ = explode('.', $part);
 
@@ -233,7 +229,7 @@ class App extends Container
             }
 
             // TODO: the method handlers could still have installed format handlers,
-            // do we'll have to check those here again.
+            // so we'll have to check those here again.
 
             return new Response(null, 501); // Got no error, but got no response either. This is "Not Implemented".
         } finally {
@@ -259,22 +255,29 @@ class App extends Container
         }
     }
 
+    /**
+     * An alias to path()
+     *
+     * @see path()
+     */
     public function resource(string $part, \Closure $callback)
     {
-        $this->currentCallbacks['path'][$part] = $callback;
-    }
-
-    public function path($part, \Closure $callback)
-    {
-        $this->currentCallbacks['path'][$part] = $callback;
+        $this->path($part, $callback);
     }
 
     /**
-     * Param match has lower priority than path match
-     *
-     * e.g. if a path section matches, then the search concludes
-     * the current segment and params won't even be searched for a
-     * match.
+     * A path() callback is really just a param() callback
+     * with the filter function being the exactly matching string
+     */
+    public function path($part, \Closure $callback)
+    {
+        $this->param(function ($_part) use ($part) {
+            return $_part == $part;
+        }, $callback);
+    }
+
+    /**
+     * Param callbacks are tested in the order they are defiend.
      */
     public function param(\Closure $filter, \Closure $callback)
     {
@@ -289,43 +292,53 @@ class App extends Container
      */
     public function format($format, \Closure $callback)
     {
+        // TODO: Install a param handle that can handle formats
         $this->currentCallbacks['format'][$format] = $callback;
         return $this;
     }
 
+    /**
+     * Method handlers are called after the path has been fully consumed
+     * less the extension.
+     */
+    public function method(string $method, \Closure $callback)
+    {
+        $this->currentCallbacks[$method] = $callback;
+    }
+
     public function get(\Closure $callback)
     {
-        $this->currentCallbacks['GET'] = $callback;
+        $this->method('GET', $callback);
     }
 
     public function head(\Closure $callback)
     {
-        $this->currentCallbacks['HEAD'] = $callback;
+        $this->method('HEAD', $callback);
     }
 
     public function post(\Closure $callback)
     {
-        $this->currentCallbacks['POST'] = $callback;
+        $this->method('POST', $callback);
     }
 
     public function put(\Closure $callback)
     {
-        $this->currentCallbacks['PUT'] = $callback;
+        $this->method('PUT', $callback);
     }
 
     public function delete(\Closure $callback)
     {
-        $this->currentCallbacks['DELETE'] = $callback;
+        $this->method('DELETE', $callback);
     }
 
     public function patch(\Closure $callback)
     {
-        $this->currentCallbacks['PATCH'] = $callback;
+        $this->method('PATCH', $callback);
     }
 
     public function options(\Closure $callback)
     {
-        $this->currentCallbacks['OPTIONS'] = $callback;
+        $this->method('OPTIONS', $callback);
     }
 
     public function domain()

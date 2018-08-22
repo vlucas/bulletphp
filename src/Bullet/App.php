@@ -117,11 +117,15 @@ class App extends Container
         try {
             // Remove empty path elements
             $uri = $request->path();
-            $parts = [''];
+            //$parts = [''];
             foreach (explode('/', $uri) as $part) {
                 if ($part != '') {
                     $parts[] = $part;
                 }
+            }
+            if (empty($parts)) {
+                // If there are only some /-s in the path, then it's the root path.
+                $parts = [''];
             }
 
             // Walk through the URI and execute path callbacks

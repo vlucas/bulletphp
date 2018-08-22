@@ -16,10 +16,8 @@ class AppTest extends \PHPUnit_Framework_TestCase
         $collect = [];
 
         $app = new Bullet\App();
-        $app->path('', function() use(&$collect) {
-            $this->path('test', function() use(&$collect) {
-                $collect[] = 'test';
-            });
+        $app->path('test', function() use(&$collect) {
+            $collect[] = 'test';
         });
 
         $app->run(new Bullet\Request('GET', '/test/'));
@@ -31,10 +29,8 @@ class AppTest extends \PHPUnit_Framework_TestCase
     public function testSingleResourceGet()
     {
         $app = new Bullet\App();
-        $app->path('', function() {
-            $this->resource('test', function() {
-                return 'resource';
-            });
+        $app->resource('test', function() {
+            return 'resource';
         });
 
         $res = $app->run(new Bullet\Request('GET', '/test/'));
@@ -46,15 +42,13 @@ class AppTest extends \PHPUnit_Framework_TestCase
         $collect = array();
 
         $app = new Bullet\App();
-        $app->path('', function() use($app, &$collect) {
-            $app->path('test', function($request) use($app, &$collect) {
-                $collect[] = 'test';
-                $app->path('foo', function() use(&$collect) {
-                    $collect[] = 'foo';
-                });
-                $app->path('foo2', function() use(&$collect) {
-                    $collect[] = 'foo2';
-                });
+        $app->path('test', function($request) use(&$collect) {
+            $collect[] = 'test';
+            $this->path('foo', function() use(&$collect) {
+                $collect[] = 'foo';
+            });
+            $this->path('foo2', function() use(&$collect) {
+                $collect[] = 'foo2';
             });
         });
 
@@ -69,14 +63,12 @@ class AppTest extends \PHPUnit_Framework_TestCase
         $collect = array();
 
         $app = new Bullet\App();
-        $app->path('', function() use($app, &$collect) {
-            $app->path('test', function($request) use($app, &$collect) {
-                $app->path('foo', function() use(&$collect) {
-                    return 'foo';
-                });
-                $app->path('foo2', function() use(&$collect) {
-                    return 'foo2';
-                });
+        $app->path('test', function($request) use(&$collect) {
+            $this->path('foo', function() use(&$collect) {
+                return 'foo';
+            });
+            $this->path('foo2', function() use(&$collect) {
+                return 'foo2';
             });
         });
 
@@ -91,12 +83,10 @@ class AppTest extends \PHPUnit_Framework_TestCase
         $collect = array();
 
         $app = new Bullet\App();
-        $app->path('', function() use($app, &$collect) {
-            $app->path('test', function($request) use($app, &$collect) {
-                $app->path('foo', function() use(&$collect) {
-                });
-                $app->path('foo2', function() use(&$collect) {
-                });
+        $app->path('test', function($request) use(&$collect) {
+            $this->path('foo', function() use(&$collect) {
+            });
+            $this->path('foo2', function() use(&$collect) {
             });
         });
 
@@ -108,11 +98,9 @@ class AppTest extends \PHPUnit_Framework_TestCase
     public function test204HasNoBodyContent()
     {
         $app = new Bullet\App();
-        $app->path('', function() use($app, &$collect) {
-            $app->path('test-no-content', function($request) use($app) {
-                $app->get(function($request) {
-                    return 204;
-                });
+        $app->path('test-no-content', function($request) {
+            $this->get(function($request) {
+                return 204;
             });
         });
 
@@ -126,17 +114,15 @@ class AppTest extends \PHPUnit_Framework_TestCase
         $collect = array();
 
         $app = new Bullet\App();
-        $app->path('', function() use($app, &$collect) {
-            $app->path('test', function($request) use($app, &$collect) {
-                $collect[] = 'test';
-                $app->path('foo', function() use($app, &$collect) {
-                    $collect[] = 'foo';
-                    $app->get(function() use(&$collect) {
-                        $collect[] = 'get';
-                    });
-                    $app->post(function() use(&$collect) {
-                        $collect[] = 'post';
-                    });
+        $app->path('test', function($request) use(&$collect) {
+            $collect[] = 'test';
+            $this->path('foo', function() use(&$collect) {
+                $collect[] = 'foo';
+                $this->get(function() use(&$collect) {
+                    $collect[] = 'get';
+                });
+                $this->post(function() use(&$collect) {
+                    $collect[] = 'post';
                 });
             });
         });
@@ -168,14 +154,12 @@ class AppTest extends \PHPUnit_Framework_TestCase
     public function testExactPathMatchNotInParamCapture()
     {
         $app = new Bullet\App();
-        $app->path('', function() use($app) {
-            $app->path('ping', function($request) use($app) {
-                $app->param($app::paramSlug(), function($request, $slug) use($app) {
-                    return $slug;
-                });
-
-                return "pong";
+        $app->path('ping', function($request) {
+            $this->param($this::paramSlug(), function($request, $slug) {
+                return $slug;
             });
+
+            return "pong";
         });
 
         $response = $app->run(new Bullet\Request('GET', '/ping'));
@@ -185,17 +169,15 @@ class AppTest extends \PHPUnit_Framework_TestCase
     public function testRepeatPathnameNested()
     {
         $app = new Bullet\App();
-        $app->path('', function() use($app) {
-			$app->path('about', function($request) use ($app) {
-				// return data for my "about" path
-				return 'about';
-			});
+		$app->path('about', function($request) {
+			// return data for my "about" path
+			return 'about';
+		});
 
-			$app->path('rels', function($request) use($app) {
-				$app->param($app::paramSlug(), function($request, $rel) use($app) {
-					// return the documentation page for /rels/{rel} such as /rels/about
-					return 'rel/' . $rel;
-				});
+		$app->path('rels', function($request) {
+			$this->param($this::paramSlug(), function($request, $rel) {
+				// return the documentation page for /rels/{rel} such as /rels/about
+				return 'rel/' . $rel;
 			});
 		});
 
@@ -206,17 +188,15 @@ class AppTest extends \PHPUnit_Framework_TestCase
     public function testRepeatPathnameNestedPathInsideParam()
     {
         $app = new Bullet\App();
-        $app->path('', function() use($app) {
-			$app->path('about', function($request) use ($app) {
-				// return data for my "about" path
-				return 'about';
-			});
+		$app->path('about', function($request) {
+			// return data for my "about" path
+			return 'about';
+		});
 
-			$app->path('rels', function($request) use($app) {
-				$app->param($app::paramSlug(), function($request, $rel) use($app) {
-					$app->path('test', function($request) use ($app, $rel) {
-						return 'rel/' . $rel . '/test';
-					});
+		$app->path('rels', function($request) {
+			$this->param($this::paramSlug(), function($request, $rel) {
+				$this->path('test', function($request) use ($rel) {
+					return 'rel/' . $rel . '/test';
 				});
 			});
 		});
@@ -228,16 +208,14 @@ class AppTest extends \PHPUnit_Framework_TestCase
     public function testGetHandlerBeforeParamCapture()
     {
         $app = new Bullet\App();
-        $app->path('', function() use($app) {
-			$app->path('ping', function($request) use($app) {
-				$app->get(function($request) use($app) {
-					return "pong";
-				});
+		$app->path('ping', function($request) {
+			$this->get(function($request) {
+				return "pong";
+			});
 
-				$app->param($app::paramSlug(), function($request, $slug) use($app) {
-					$app->get(function($request) use($slug) {
-						return $slug;
-					});
+			$this->param($this::paramSlug(), function($request, $slug) {
+				$this->get(function($request) use($slug) {
+					return $slug;
 				});
 			});
 		});
@@ -249,17 +227,15 @@ class AppTest extends \PHPUnit_Framework_TestCase
     public function testParamCallbacksGetClearedAfterMatch()
     {
         $app = new Bullet\App();
-        $app->path('', function() use($app) {
-			$app->path('about', function() use ($app){
-				$page = 'about';
-				$app->get(function() use ($app,$page){
-					return 'about';
-				});
+		$app->path('about', function() {
+			$page = 'about';
+			$this->get(function() use ($page) {
+				return 'about';
+			});
 
-				$app->param($app::paramSlug(),function($request,$slug) use ($app,$page){
-					$app->get(function() use ($app,$page,$slug){
-						return $page.'-'.$slug;
-					});
+			$this->param($this::paramSlug(),function($request,$slug) use ($page){
+				$this->get(function() use ($page,$slug){
+					return $page.'-'.$slug;
 				});
 			});
 		});
@@ -275,21 +251,19 @@ class AppTest extends \PHPUnit_Framework_TestCase
     public function testDoubleSlugMethodHandler()
     {
         $app = new Bullet\App();
-        $app->path('', function() use($app) {
-			$app->path('ping', function($request) use($app) {
-				$app->get(function($request) use($app) {
-					return "pong";
+		$app->path('ping', function($request) {
+			$this->get(function($request) {
+				return "pong";
+			});
+
+			$this->param($this::paramSlug(), function($request, $slug1) {
+				$this->get(function($request) use($slug1) {
+					return $slug1;
 				});
 
-				$app->param($app::paramSlug(), function($request, $slug1) use($app) {
-					$app->get(function($request) use($slug1) {
-						return $slug1;
-					});
-
-					$app->param($app::paramSlug(), function($request, $slug2) use($app, $slug1) {
-						$app->get(function($request) use($slug1, $slug2) {
-							return $slug1 . "/" . $slug2;
-						});
+				$this->param($this::paramSlug(), function($request, $slug2) use($slug1) {
+					$this->get(function($request) use($slug1, $slug2) {
+						return $slug1 . "/" . $slug2;
 					});
 				});
 			});
@@ -304,10 +278,8 @@ class AppTest extends \PHPUnit_Framework_TestCase
         $collect = [];
 
         $app = new Bullet\App();
-        $app->path('', function() use($app) {
-			$app->path('test', function($request) use($app, &$collect) {
-				return 'test';
-			});
+		$app->path('test', function($request) use(&$collect) {
+			return 'test';
 		});
 
         $actual = $app->run(new Bullet\Request('GET', '/test/'));
@@ -319,18 +291,16 @@ class AppTest extends \PHPUnit_Framework_TestCase
     public function testReturnSHortCircuitsRequest()
     {
         $app = new Bullet\App();
-        $app->path('', function() use($app) {
-			$app->path('test', function($request) use($app) {
-				$app->path('teapot', function($request) use($app) {
-					// GET
-					$app->get(function($request) use($app) {
-						// Should not be returned
-						return new \Bullet\Response(418, "Teapot");
-					});
-
-					// Should be returned
-					return 'Nothing to see here...';
+		$app->path('test', function($request) {
+			$this->path('teapot', function($request) {
+				// GET
+				$this->get(function($request) {
+					// Should not be returned
+					return new \Bullet\Response(418, "Teapot");
 				});
+
+				// Should be returned
+				return 'Nothing to see here...';
 			});
 		});
 
@@ -345,19 +315,17 @@ class AppTest extends \PHPUnit_Framework_TestCase
         $actual = [];
 
         $app = new Bullet\App();
-        $app->path('', function() use($app, &$actual) {
-			$app->path('test', function($request) use($app, &$actual) {
-				$app->path('teapot', function($request) use($app, &$actual) {
-					// Should be executed
-					$app->get(function($request) use($app, &$actual) {
-						$actual[] = 'teapot';
-					});
+		$app->path('test', function($request) use(&$actual) {
+			$this->path('teapot', function($request) use(&$actual) {
+				// Should be executed
+				$this->get(function($request) use(&$actual) {
+					$actual[] = 'teapot';
 				});
+			});
 
-				// Should NOT be executed (not FULL path)
-				$app->get(function($request) use($app, &$actual) {
-					$actual[] = 'notateapot';
-				});
+			// Should NOT be executed (not FULL path)
+			$this->get(function($request) use(&$actual) {
+				$actual[] = 'notateapot';
 			});
 		});
 
@@ -370,19 +338,17 @@ class AppTest extends \PHPUnit_Framework_TestCase
         $actual = [];
 
         $app = new Bullet\App();
-        $app->path('', function() use($app) {
-			$app->path('test', function($request) use($app, &$actual) {
-				$app->path('method', function($request) use($app, &$actual) {
-					// Should not be executed (not POST)
-					$app->get(function($request) use($app, &$actual) {
-						$actual[] = 'get';
-					});
+		$app->path('test', function($request) use(&$actual) {
+			$this->path('method', function($request) use(&$actual) {
+				// Should not be executed (not POST)
+				$this->get(function($request) use(&$actual) {
+					$actual[] = 'get';
 				});
+			});
 
-				// Should NOT be executed (not FULL path)
-				$app->post(function($request) use($app, &$actual) {
-					$actual[] = 'post';
-				});
+			// Should NOT be executed (not FULL path)
+			$this->post(function($request) use(&$actual) {
+				$actual[] = 'post';
 			});
 		});
 
@@ -393,16 +359,12 @@ class AppTest extends \PHPUnit_Framework_TestCase
     public function testIfPathExistsAndMethodCallbackDoesNotResponseIs405()
     {
         $app = new Bullet\App();
-        $app->path('', function() use($app) {
-			$app->path('methodnotallowed', function($request) use($app) {
-				// GET
-				$app->get(function($request) use($app) {
-					return 'get';
-				});
-				// POST
-				$app->post(function($request) use($app) {
-					return 'post';
-				});
+		$app->path('methodnotallowed', function($request) {
+			$this->get(function($request) {
+				return 'get';
+			});
+			$this->post(function($request) {
+				return 'post';
 			});
 		});
 
@@ -414,16 +376,14 @@ class AppTest extends \PHPUnit_Framework_TestCase
     public function testPathParamCaptureFirst()
     {
         $app = new Bullet\App();
-        $app->path('', function() use($app) {
-			$app->path('paramtest', function($request) use($app) {
-				// Digit
-				$app->param(function ($value) { return ctype_digit($value);}, function($request, $id) use($app) {
-					return $id;
-				});
-				// Alphanumeric
-				$app->param(function ($value) { return ctype_alnum($value);}, function($request, $slug) use($app) {
-					return $slug;
-				});
+		$app->path('paramtest', function($request) {
+			// Digit
+			$this->param(function ($value) { return ctype_digit($value);}, function($request, $id) {
+				return $id;
+			});
+			// Alphanumeric
+			$this->param(function ($value) { return ctype_alnum($value);}, function($request, $slug) {
+				return $slug;
 			});
 		});
 
@@ -435,16 +395,14 @@ class AppTest extends \PHPUnit_Framework_TestCase
     public function testPathParamCaptureSecond()
     {
         $app = new Bullet\App();
-        $app->path('', function() use($app) {
-			$app->path('paramtest', function($request) use($app) {
-				// Digit
-				$app->param(function ($value) { return ctype_digit($value);}, function($request, $id) use($app) {
-					return $id;
-				});
-				// All printable characters except space
-				$app->param(function ($value) { return ctype_graph($value);}, function($request, $slug) use($app) {
-					return $slug;
-				});
+		$app->path('paramtest', function($request) {
+			// Digit
+			$this->param(function ($value) { return ctype_digit($value);}, function($request, $id) {
+				return $id;
+			});
+			// All printable characters except space
+			$this->param(function ($value) { return ctype_graph($value);}, function($request, $slug) {
+				return $slug;
 			});
 		});
 
@@ -456,24 +414,22 @@ class AppTest extends \PHPUnit_Framework_TestCase
     public function testPathParamCaptureWithMethodHandlers()
     {
         $app = new Bullet\App();
-        $app->path('', function() use($app) {
-			$app->path('paramtest', function($request) use($app) {
-				// Digit
-				$app->param($app::paramInt(), function($request, $id) use($app) {
-					$app->get(function($request) use($id) {
-						// View resource
-						return 'view_' . $id;
-					});
+		$app->path('paramtest', function($request) {
+			// Digit
+			$this->param($this::paramInt(), function($request, $id) {
+				$this->get(function($request) use($id) {
+					// View resource
+					return 'view_' . $id;
+				});
 
-					$app->put(function($request) use($id) {
-						// Update resource
-						return 'update_' . $id;
-					});
+				$this->put(function($request) use($id) {
+					// Update resource
+					return 'update_' . $id;
 				});
-				// All printable characters except space
-				$app->param($app::paramSlug(), function($request, $slug) use($app) {
-					return $slug;
-				});
+			});
+			// All printable characters except space
+			$this->param($this::paramSlug(), function($request, $slug) {
+				return $slug;
 			});
 		});
 
@@ -485,10 +441,8 @@ class AppTest extends \PHPUnit_Framework_TestCase
     public function testHandlersCanReturnIntergerAsHttpStatus()
     {
         $app = new Bullet\App();
-        $app->path('', function() use($app) {
-			$app->path('testint', function() use($app) {
-				return 200;
-			});
+		$app->path('testint', function() {
+			return 200;
 		});
 
         $response = $app->run(new Bullet\Request('GET', 'testint'));
@@ -499,12 +453,9 @@ class AppTest extends \PHPUnit_Framework_TestCase
     public function testHandlersCanReturnIntergerAsHttpStatusInMethodCallback()
     {
         $app = new Bullet\App();
-        $app->path('', function() use($app) {
-			$app->path('testint2', function() use($app) {
-				// GET
-				$app->get(function($request) use($app) {
-					return 429;
-				});
+		$app->path('testint2', function() {
+			$this->get(function($request) {
+				return 429;
 			});
 		});
 
@@ -517,12 +468,9 @@ class AppTest extends \PHPUnit_Framework_TestCase
     public function testResponseContentCanBeChangedAfterTheFact()
     {
         $app = new Bullet\App();
-        $app->path('', function() use($app) {
-			$app->path('testhandler', function() use($app) {
-				// GET
-				$app->get(function($request) use($app) {
-					return 500;
-				});
+		$app->path('testhandler', function() {
+			$this->get(function($request) {
+				return 500;
 			});
 		});
 
@@ -539,11 +487,9 @@ class AppTest extends \PHPUnit_Framework_TestCase
     public function testModifyingResponseStatusKeepsContent()
     {
         $app = new Bullet\App();
-        $app->path('', function() use($app) {
-			$app->path('testhandler', function() use($app) {
-				$app->get(function($request) use($app) {
-					return new \Bullet\Response("Oh Snap!", 500);
-				});
+		$app->path('testhandler', function() {
+			$this->get(function($request) {
+				return new \Bullet\Response("Oh Snap!", 500);
 			});
 		});
 
@@ -560,12 +506,10 @@ class AppTest extends \PHPUnit_Framework_TestCase
     public function testPathExecutionObservesExtensionsIfNoFormatHandlersArePresent()
     {
         $app = new Bullet\App();
-        $app->path('', function() use($app) {
-			$app->path('test', function($request) use($app) {
-				$collect[] = 'test';
-				$app->path('foo.json', function() use($app) {
-					return 'Not JSON';
-				});
+		$app->path('test', function($request) {
+			$collect[] = 'test';
+			$this->path('foo.json', function() {
+				return 'Not JSON';
 			});
 		});
 
@@ -577,19 +521,17 @@ class AppTest extends \PHPUnit_Framework_TestCase
     public function testPathWithExtensionExecutesMatchingFormatHandler()
     {
         $app = new Bullet\App();
-        $app->path('', function() use($app) {
-			$app->path('test', function($request) use($app) {
-				$collect[] = 'test';
-				$app->path('foo', function() use($app) {
-                    $app->get(function() use($app) {
-                        $app->format('json', function() use($app) {
-    						return ['foo' => 'bar', 'bar' => 'baz'];
-    					});
-    					$app->format('html', function() use($app) {
-    						return '<tag>Some HTML</tag>';
-    					});
-                    });
-				});
+		$app->path('test', function($request) {
+			$collect[] = 'test';
+			$this->path('foo', function() {
+                $this->get(function() {
+                    $this->format('json', function() {
+						return ['foo' => 'bar', 'bar' => 'baz'];
+					});
+					$this->format('html', function() {
+						return '<tag>Some HTML</tag>';
+					});
+                });
 			});
 		});
 
@@ -601,18 +543,16 @@ class AppTest extends \PHPUnit_Framework_TestCase
     public function testPathWithExtensionAndFormatHandlersButNoMatchingFormatHandlerReturns406()
     {
         $app = new Bullet\App();
-        $app->path('', function() use($app) {
-			$app->path('test', function($request) use($app) {
-				$app->path('foo', function() use($app) {
-                    $app->get(function () use($app) {
-                        $app->format('json', function() use($app) {
-    						return array('foo' => 'bar', 'bar' => 'baz');
-    					});
-    					$app->format('html', function() use($app) {
-    						return '<tag>Some HTML</tag>';
-    					});
-                    });
-				});
+		$app->path('test', function($request) {
+			$app->path('foo', function() {
+                $this->get(function () {
+                    $this->format('json', function() {
+						return array('foo' => 'bar', 'bar' => 'baz');
+					});
+					$this->format('html', function() {
+						return '<tag>Some HTML</tag>';
+					});
+                });
 			});
 		});
 
@@ -623,17 +563,15 @@ class AppTest extends \PHPUnit_Framework_TestCase
     public function testFormatHanldersRunUsingAcceptHeader()
     {
         $app = new Bullet\App();
-        $app->path('', function() use($app) {
-			$app->path('posts', function($request) use($app) {
-				$app->get(function() use($app) {
-					$app->format('json', function() use($app) {
-						return ['listing' => 'something'];
-					});
+		$app->path('posts', function($request) {
+			$this->get(function() {
+				$this->format('json', function() {
+					return ['listing' => 'something'];
 				});
-				$app->post(function($request) use($app) {
-					$app->format('json', function() use($app) {
-						return \Bullet\Response::make(['created' => 'something'], 201);
-					});
+			});
+			$this->post(function($request) {
+				$this->format('json', function() {
+					return \Bullet\Response::make(['created' => 'something'], 201);
 				});
 			});
 		});
@@ -647,14 +585,12 @@ class AppTest extends \PHPUnit_Framework_TestCase
     public function testNestedRun()
     {
         $app = new Bullet\App();
-        $app->path('', function() use($app) {
-			$app->path('foo', function($request) use($app) {
-				return 'foo';
-			});
-			$app->path('bar', function($request) use($app) {
-				$foo = $app->run_(new Bullet\Request('GET', 'foo')); // $foo is now a `Bullet\Response` instance
-				return $foo->content() . 'bar';
-			});
+		$app->path('foo', function($request) {
+			return 'foo';
+		});
+		$app->path('bar', function($request) {
+			$foo = $this->run_(new Bullet\Request('GET', 'foo')); // $foo is now a `Bullet\Response` instance
+			return $foo->content() . 'bar';
 		});
         $response = $app->run(new Bullet\Request('GET', 'bar'));
         $this->assertEquals(200, $response->status());
@@ -664,11 +600,9 @@ class AppTest extends \PHPUnit_Framework_TestCase
     public function testStatusOnResponseObjectReturnsCorrectStatus()
     {
         $app = new Bullet\App();
-        $app->path('', function() use($app) {
-			$app->path('posts', function($request) use($app) {
-				$app->post(function() use($app) {
-					return new \Bullet\Response(201, 'Created something!');
-				});
+		$app->path('posts', function($request) {
+			$this->post(function() {
+				return new \Bullet\Response(201, 'Created something!');
 			});
 		});
 
@@ -679,12 +613,10 @@ class AppTest extends \PHPUnit_Framework_TestCase
     public function testStatusOnResponseObjectReturnsCorrectStatusAsJSON()
     {
         $app = new Bullet\App();
-        $app->path('', function() use($app) {
-			$app->path('posts', function($request) use($app) {
-				$app->post(function() use($app) {
-					$app->format('json', function() use($app) {
-						return new \Bullet\Response(201, array('created' => 'something'));
-					});
+		$app->path('posts', function($request) {
+			$this->post(function() {
+				$this->format('json', function() {
+					return new \Bullet\Response(201, array('created' => 'something'));
 				});
 			});
 		});
@@ -700,10 +632,8 @@ class AppTest extends \PHPUnit_Framework_TestCase
     public function testExceptionIsNotCoughtWhenCallingRun_()
     {
         $app = new Bullet\App();
-        $app->path('', function() use($app) {
-			$app->path('test', function($request) use($app) {
-				throw new \Exception("This is a specific error message here!");
-			});
+		$app->path('test', function($request) {
+			throw new \Exception("This is a specific error message here!");
 		});
 
         $response = $app->run_(new Bullet\Request('GET', 'test'));
@@ -713,10 +643,8 @@ class AppTest extends \PHPUnit_Framework_TestCase
     {
         $app = new Bullet\App();
 
-        $app->path('', function() {
-			$this->path('test', function($request) use($app) {
-				throw new \InvalidArgumentException("This is a specific error message here!");
-			});
+		$this->path('test', function($request) {
+			throw new \InvalidArgumentException("This is a specific error message here!");
 		});
 
         $response = $app->run(new Bullet\Request('POST', 'test'));
@@ -732,11 +660,9 @@ class AppTest extends \PHPUnit_Framework_TestCase
     public function testResponseContentCanBeSetAfterTheFact()
     {
         $app = new Bullet\App();
-        $app->path('', function() use($app) {
-			$app->path('testhandler', function() use($app) {
-				$app->put(function($request) use($app) {
-					return 'test';
-				});
+		$app->path('testhandler', function() {
+			$this->put(function($request) {
+				return 'test';
 			});
 		});
 
@@ -749,11 +675,9 @@ class AppTest extends \PHPUnit_Framework_TestCase
     public function testSupportsPatch()
     {
         $app = new Bullet\App();
-        $app->path('', function() use($app) {
-			$app->path('update', function($request) use($app) {
-				$app->patch(function($request) {
-					return $request->params();
-				});
+		$app->path('update', function($request) {
+			$this->patch(function($request) {
+				return $request->params();
 			});
 		});
 
@@ -768,11 +692,9 @@ class AppTest extends \PHPUnit_Framework_TestCase
     public function testSupportsHeadAsGetWithNoResponseBody()
     {
         $app = new Bullet\App();
-        $app->path('', function() use($app) {
-			$app->path('someroute', function($request) use($app) {
-				$app->get(function($request) {
-					return 'I am hidden with a HEAD request!';
-				});
+		$app->path('someroute', function($request) {
+			$this->get(function($request) {
+				return 'I am hidden with a HEAD request!';
 			});
 		});
 
@@ -786,14 +708,12 @@ class AppTest extends \PHPUnit_Framework_TestCase
     public function testSupportsHeadWithHandler()
     {
         $app = new Bullet\App();
-        $app->path('', function() use($app) {
-			$app->path('test', function($request) use($app) {
-				$app->head(function($request) use($app) {
-					return (new \Bullet\Response())->header('X-Special', 'Stuff');
-				});
-				$app->get(function($request) {
-					return 'I am hidden with a HEAD request!';
-				});
+		$app->path('test', function($request) {
+			$this->head(function($request) {
+				return (new \Bullet\Response())->header('X-Special', 'Stuff');
+			});
+			$this->get(function($request) {
+				return 'I am hidden with a HEAD request!';
 			});
 		});
 
@@ -807,8 +727,8 @@ class AppTest extends \PHPUnit_Framework_TestCase
     public function testSupportCustomHeaders()
     {
         $app = new Bullet\App();
-        $app->path('test', function($request) use($app) {
-            $app->get(function($request) use($app) {
+        $app->path('test', function($request) {
+            $this->get(function($request) {
                 return (new \Bullet\Response())
                     ->status(200)
                     ->header('X-Special', 'Stuff')
@@ -826,9 +746,9 @@ class AppTest extends \PHPUnit_Framework_TestCase
     public function testSubdomainRoute()
     {
         $app = new Bullet\App();
-        $app->subdomain('test', function($request) use($app) {
-            $app->path('', function($request) use($app) {
-                $app->get(function($request) {
+        $app->subdomain('test', function($request) {
+            $this->path('', function($request) {
+                $this->get(function($request) {
                     return "GET subdomain " . $request->subdomain();
                 });
             });
@@ -844,14 +764,14 @@ class AppTest extends \PHPUnit_Framework_TestCase
     public function testSubdomainRouteAfterMethodHandler()
     {
         $app = new Bullet\App();
-        $app->path('', function() use($app) {
-			$app->get(function($request) {
+        $app->path('', function() {
+			$this->get(function($request) {
 				return "GET main path";
 			});
 		});
-        $app->subdomain('bar', function($request) use($app) {
-            $app->path('', function($request) use($app) {
-                $app->get(function($request) {
+        $app->subdomain('bar', function($request) {
+            $this->path('', function($request) {
+                $this->get(function($request) {
                     return "GET subdomain " . $request->subdomain();
                 });
             });
@@ -867,15 +787,15 @@ class AppTest extends \PHPUnit_Framework_TestCase
     public function testSubdomainRouteWithPathsWithNoRequestSubdomain()
     {
         $app = new Bullet\App();
-        $app->subdomain('bar', function($request) use($app) {
-            $app->path('', function($request) use($app) {
-                $app->get(function($request) {
+        $app->subdomain('bar', function($request) {
+            $this->path('', function($request) {
+                $this->get(function($request) {
                     return "GET subdomain " . $request->subdomain();
                 });
             });
         });
-        $app->path('', function($request) use($app) {
-            $app->get(function($request) {
+        $app->path('', function($request) {
+            $this->get(function($request) {
                 return "GET main path";
             });
         });
@@ -890,9 +810,9 @@ class AppTest extends \PHPUnit_Framework_TestCase
     public function testSubdomainRouteArray()
     {
         $app = new Bullet\App();
-        $app->subdomain(['www', false], function($request) use($app) {
-            $app->path('', function($request) use($app) {
-                $app->get(function($request) {
+        $app->subdomain(['www', false], function($request) {
+            $this->path('', function($request) {
+                $this->get(function($request) {
                     return "GET www";
                 });
             });
@@ -908,9 +828,9 @@ class AppTest extends \PHPUnit_Framework_TestCase
     public function testSubdomainFalseRouteWithNoSubdomain()
     {
         $app = new Bullet\App();
-        $app->subdomain(false, function($request) use($app) {
-            $app->path('', function($request) use($app) {
-                $app->get(function($request) {
+        $app->subdomain(false, function($request) {
+            $this->path('', function($request) {
+                $this->get(function($request) {
                     return "GET www";
                 });
             });
@@ -926,9 +846,9 @@ class AppTest extends \PHPUnit_Framework_TestCase
     public function testDomainRoute()
     {
         $app = new Bullet\App();
-        $app->domain('example.com', function($request) use($app) {
-            $app->path('', function($request) use($app) {
-                $app->get(function($request) {
+        $app->domain('example.com', function($request) {
+            $this->path('', function($request) {
+                $this->get(function($request) {
                     return "GET " . $request->host();
                 });
             });
@@ -944,9 +864,9 @@ class AppTest extends \PHPUnit_Framework_TestCase
     public function testDomainRoute404()
     {
         $app = new Bullet\App();
-        $app->domain('example.com', function($request) use($app) {
-            $app->path('', function($request) use($app) {
-                $app->get(function($request) {
+        $app->domain('example.com', function($request) {
+            $this->path('', function($request) {
+                $this->get(function($request) {
                     return "GET " . $request->host();
                 });
             });
@@ -961,9 +881,9 @@ class AppTest extends \PHPUnit_Framework_TestCase
     public function testDomainRoute404OnRequestedDomain()
     {
         $app = new Bullet\App();
-        $app->domain('example.com', function($request) use($app) {
-            $app->path('goodpath', function($request) use($app) {
-                $app->get(function($request) {
+        $app->domain('example.com', function($request) {
+            $this->path('goodpath', function($request) {
+                $this->get(function($request) {
                     return "GET " . $request->host();
                 });
             });
@@ -979,7 +899,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
     public function testDefaultArrayToJSONContentConverter()
     {
         $app = new Bullet\App();
-        $app->path('', function($request) use($app) {
+        $app->path('', function($request) {
             return ['foo' => 'bar'];
         });
 
@@ -993,7 +913,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
     public function testResponseWithNoContentConverterIsUnchanged()
     {
         $app = new Bullet\App();
-        $app->path('', function($request) use($app) {
+        $app->path('', function($request) {
             return 'foobar';
         });
 
@@ -1007,7 +927,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
     public function testResponseOfSpecificClassGetsConverted()
     {
         $app = new Bullet\App();
-        $app->path('', function($request) use($app) {
+        $app->path('', function($request) {
             return new TestHelper();
         });
 
@@ -1031,7 +951,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
     public function testThatAllApplicableResponseHandlersAreApplied()
     {
         $app = new Bullet\App();
-        $app->path('', function($request) use($app) {
+        $app->path('', function($request) {
             return 'a';
         });
 
@@ -1072,7 +992,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
     public function testThatUserResponseHandlersOverrideDefaults()
     {
         $app = new Bullet\App();
-        $app->path('', function($request) use($app) {
+        $app->path('', function($request) {
             return array('a');
         });
 
@@ -1111,7 +1031,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
     public function testThatDefaultResponseHandlerMayBeRemoved()
     {
         $app = new Bullet\App();
-        $app->path('', function($request) use($app) {
+        $app->path('', function($request) {
             return ['a'];
         });
 
@@ -1126,7 +1046,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
     public function testThatUserResponseHandlersMayBeRemoved()
     {
         $app = new Bullet\App();
-        $app->path('', function($request) use($app) {
+        $app->path('', function($request) {
             return 'foo';
         });
         $request = new \Bullet\Request('GET', '/');
@@ -1150,7 +1070,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
     public function testThatIndexedResponseHandlersMayBeRemoved()
     {
         $app = new Bullet\App();
-        $app->path('', function($request) use($app) {
+        $app->path('', function($request) {
             return 'foo';
         });
         $request = new \Bullet\Request('GET', '/');
@@ -1174,15 +1094,13 @@ class AppTest extends \PHPUnit_Framework_TestCase
     {
         $app = new Bullet\App();
 
-        $app->path('', function() use($app) {
-			$app->path('admin', function($request) use($app) {
-				$app->path('client', function($request) use($app) {
-					$app->param($app::paramInt(), function($request,$id) use($app){
-						$app->path('toggleVisiblity', function($request) use($app,$id) {
-							$app->path('item', function($request) use($app,$id) {
-								$app->get(function($request)use($app){
-									return "deep";
-								});
+		$app->path('admin', function($request) {
+			$this->path('client', function($request) {
+				$this->param($this::paramInt(), function($request,$id) {
+					$this->path('toggleVisiblity', function($request) {
+						$this->path('item', function($request) {
+							$this->get(function($request) {
+								return "deep";
 							});
 						});
 					});
@@ -1198,19 +1116,17 @@ class AppTest extends \PHPUnit_Framework_TestCase
     {
         $app = new Bullet\App();
 
-        $app->path('', function() use($app) {
-			$app->path('a', function($request) use($app) {
-				$app->path('b', function($request) use($app) {
-					return 'a/b';
-				});
+		$app->path('a', function($request) {
+			$this->path('b', function($request) {
+				return 'a/b';
 			});
+		});
 
-			$app->path('c', function($request) use($app) {
-				$app->path('a', function($request) use($app) {
-					$app->path('b', function($request) use($app) {
-						$a = $app->run(new Bullet\Request('GET', 'a/b'));
-						return $a->content() . " + c/a/b";
-					});
+		$app->path('c', function($request) {
+			$this->path('a', function($request) {
+				$this->path('b', function($request) {
+					$a = $this->run(new Bullet\Request('GET', 'a/b'));
+					return $a->content() . " + c/a/b";
 				});
 			});
 		});
@@ -1223,21 +1139,19 @@ class AppTest extends \PHPUnit_Framework_TestCase
     {
         $app = new Bullet\App();
 
-        $app->subdomain('test', function($request) use($app) {
-			$app->path('', function() use($app) {
-				$app->path('a', function($request) use($app) {
-					$app->path('b', function($request) use($app) {
-						return 'a/b';
-					});
+        $app->subdomain('test', function($request) {
+			$this->path('a', function($request) {
+				$this->path('b', function($request) {
+					return 'a/b';
 				});
+			});
 
-				$app->path('c', function($request) use($app) {
-					$app->path('a', function($request) use($app) {
-						$app->path('b', function($request) use($app) {
-							$request = new \Bullet\Request('GET', 'a/b', array(), array('Host' => 'test.bulletphp.com'));
-							$a = $app->run($request);
-							return $a->content() . " + c/a/b";
-						});
+			$this->path('c', function($request) {
+				$this->path('a', function($request) {
+					$this->path('b', function($request) {
+						$request = new \Bullet\Request('GET', 'a/b', array(), array('Host' => 'test.bulletphp.com'));
+						$a = $this->run($request);
+						return $a->content() . " + c/a/b";
 					});
 				});
 			});
@@ -1253,11 +1167,11 @@ class AppTest extends \PHPUnit_Framework_TestCase
         $app = new Bullet\App();
 
         $app->path('closure-binding', function($request) {
-            return $this->url('/worked/');
+            return 'worked';
         });
 
         $result = $app->run(new Bullet\Request('GET', '/closure-binding/'));
-        $this->assertEquals('cli:/worked/', $result->content());
+        $this->assertEquals('worked', $result->content());
     }
 }
 

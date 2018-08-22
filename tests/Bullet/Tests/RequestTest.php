@@ -59,8 +59,11 @@ class RequestTest extends \PHPUnit_Framework_TestCase
     function testAcceptHeaderOverridesDefaultHtmlInApp()
     {
         $app = new Bullet\App();
+
         // Accept only JSON and request URL with no extension
         $req = new Bullet\Request('PUT', '/foo', array(), array('Accept' => 'application/json'));
+        $this->assertEquals('json', $req->format());
+
         $app->path('foo', function($request) use($app) {
             $app->format('json', function($request) {
                 return array('foo' => 'bar');
@@ -69,15 +72,17 @@ class RequestTest extends \PHPUnit_Framework_TestCase
                 return '<html></html>';
             });
         });
+
         $res = $app->run($req);
-        $this->assertEquals('json', $req->format());
-        $this->assertEquals('{"foo":"bar"}', $res->content());
+
         $this->assertEquals('application/json', $res->contentType());
+        $this->assertEquals('{"foo":"bar"}', $res->content());
     }
 
     function testAcceptAnyReturnsFirstFormat()
     {
         $app = new Bullet\App();
+
         // Accept only JSON and request URL with no extension
         $req = new Bullet\Request('GET', '/foo', array(), array('Accept' => '*/*'));
         $app->path('foo', function($request) use($app) {
@@ -88,7 +93,9 @@ class RequestTest extends \PHPUnit_Framework_TestCase
                 return '<html></html>';
             });
         });
+
         $res = $app->run($req);
+
         $this->assertEquals(null, $req->format());
         $this->assertEquals('{"foo":"bar"}', $res->content());
         $this->assertEquals('application/json', $res->contentType());
@@ -232,7 +239,7 @@ class RequestTest extends \PHPUnit_Framework_TestCase
         $app = new Bullet\App();
         $req = new Bullet\Request('OPTIONS', '/test/this_is_a_slug');
         $app->path('test', function($request) use($app) {
-            $app->param('slug', function($request, $param) use ($app) {
+            $app->param($app->paramSlug(), function($request, $param) use ($app) {
                 $app->get(function($request) {
                     return 'GET';
                 });
@@ -371,12 +378,10 @@ class RequestTest extends \PHPUnit_Framework_TestCase
     public function testUrlHelperReturnsRequestedUrl()
     {
         $app = new Bullet\App();
-        $app->path('', function() use($app) {
-			$app->path('test', function($request) use($app) {
-				$collect[] = 'test';
-				$app->path('foo', function($request) use($app) {
-					return $request->url();
-				});
+		$app->path('test', function($request) use($app) {
+			$collect[] = 'test';
+			$app->path('foo', function($request) use($app) {
+				return $request->url();
 			});
 		});
 
@@ -388,12 +393,10 @@ class RequestTest extends \PHPUnit_Framework_TestCase
     public function testAbsolutePathsCanBeGeneratedByAppendingRelativePathsToRequestUrl()
     {
         $app = new Bullet\App();
-        $app->path('', function() {
-			$this->path('test', function() {
-				$collect[] = 'test';
-				$this->path('foo', function($request) {
-					return $request->url() . '/blogs';
-				});
+		$app->path('test', function() {
+			$collect[] = 'test';
+			$this->path('foo', function($request) {
+				return $request->url() . '/blogs';
 			});
 		});
 
@@ -402,4 +405,3 @@ class RequestTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals('cli:/test/foo/blogs', $response->content());
     }
 }
-

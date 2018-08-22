@@ -99,11 +99,9 @@ class TemplateTest extends \PHPUnit_Framework_TestCase
         $app = new Bullet\App(array(
             'template.cfg' => array('path' => $this->templateDir)
         ));
-        $app->path('', function() {
-            $this->path('template-test', function($request) {
-                $this->get(function($request) {
-                    return new \Bullet\View\Template('test');
-                });
+        $app->path('template-test', function($request) {
+            $this->get(function($request) {
+                return new \Bullet\View\Template('test');
             });
         });
         $tpl = $app->run(new \Bullet\Request('GET', 'template-test'));
@@ -133,10 +131,8 @@ class TemplateTest extends \PHPUnit_Framework_TestCase
     {
         $app = new Bullet\App();
 
-        $app->path('', function() {
-            $this->path('test', function() {
-                return new \Bullet\View\Template('exception');
-            });
+        $app->path('test', function() {
+            return new \Bullet\View\Template('exception');
         });
 
         $res = $app->run(new \Bullet\Request('GET', '/test/'));
@@ -157,10 +153,8 @@ class TemplateTest extends \PHPUnit_Framework_TestCase
     {
         $app = new Bullet\App();
 
-        $app->path('', function() {
-            $this->path('renderCount', function() {
-                return new \Bullet\View\Template('renderCount');
-            });
+        $app->path('renderCount', function() {
+            return new \Bullet\View\Template('renderCount');
         });
 
         $res = $app->run(new \Bullet\Request('GET', '/renderCount/'));
@@ -172,13 +166,11 @@ class TemplateTest extends \PHPUnit_Framework_TestCase
     {
         $app = new Bullet\App();
 
-        $app->path('', function() {
-            $this->path('renderCount', function() {
-                
-                $tpl = new \Bullet\View\Template('renderCount');
-                $tpl->content();
-                return $tpl->clearCachedContent();
-            });
+        $app->path('renderCount', function() {
+
+            $tpl = new \Bullet\View\Template('renderCount');
+            $tpl->content();
+            return $tpl->clearCachedContent();
         });
 
         $res = $app->run(new \Bullet\Request('GET', '/renderCount/'));
@@ -192,12 +184,10 @@ class TemplateTest extends \PHPUnit_Framework_TestCase
 
         $app = new Bullet\App();
 
-        $app->path('', function() {
-            $this->path('variableSet', function() {
-                return (new \Bullet\View\Template('variableSet'))
-                    ->set('variable', 'one')
-                    ->layout('div');
-            });
+        $app->path('variableSet', function() {
+            return (new \Bullet\View\Template('variableSet'))
+                ->set('variable', 'one')
+                ->layout('div');
         });
 
         $rsp = $app->run(new \Bullet\Request('GET', '/variableSet/'));

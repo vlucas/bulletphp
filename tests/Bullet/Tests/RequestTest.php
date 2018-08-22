@@ -203,8 +203,8 @@ class RequestTest extends \PHPUnit_Framework_TestCase
     {
         $r = new Bullet\Request('PUT', '/test', array(), array('Content-Type' => 'application/json'), '{\"title\":\"Updated New Post Title\",\"body\":\"<p>A much better post body</p>\"}\n');
         $app = new Bullet\App();
-        $app->path('test', function($request) use($app) {
-            $app->put(function($request) {
+        $app->path('test', function($request) {
+            $this->put(function($request) {
                 return 'title: ' . $request->get('title');
             });
         });
@@ -228,11 +228,11 @@ class RequestTest extends \PHPUnit_Framework_TestCase
     {
         $app = new Bullet\App();
         $req = new Bullet\Request('OPTIONS', '/test');
-        $app->path('test', function($request) use($app) {
-            $app->get(function($request) {
+        $app->path('test', function($request) {
+            $this->get(function($request) {
                 return 'GET';
             });
-            $app->post(function($request) {
+            $this->post(function($request) {
                 return 'POST';
             });
         });
@@ -245,12 +245,12 @@ class RequestTest extends \PHPUnit_Framework_TestCase
     {
         $app = new Bullet\App();
         $req = new Bullet\Request('OPTIONS', '/test/this_is_a_slug');
-        $app->path('test', function($request) use($app) {
-            $app->param($app->paramSlug(), function($request, $param) use ($app) {
-                $app->get(function($request) {
+        $app->path('test', function($request) {
+            $this->param($this->paramSlug(), function($request, $param) {
+                $this->get(function($request) {
                     return 'GET';
                 });
-                $app->post(function($request) {
+                $this->post(function($request) {
                     return 'POST';
                 });
             });
@@ -264,14 +264,14 @@ class RequestTest extends \PHPUnit_Framework_TestCase
     {
         $app = new Bullet\App();
         $req = new Bullet\Request('OPTIONS', '/test');
-        $app->path('test', function($request) use($app) {
-            $app->get(function($request) {
+        $app->path('test', function($request) {
+            $this->get(function($request) {
                 return 'GET';
             });
-            $app->post(function($request) {
+            $this->post(function($request) {
                 return 'POST';
             });
-            $app->options(function($request) {
+            $this->options(function($request) {
                 return 'OPTIONS';
             });
         });
@@ -284,8 +284,8 @@ class RequestTest extends \PHPUnit_Framework_TestCase
     {
         $app = new Bullet\App();
         $req = new Bullet\Request('GET', '/cache');
-        $app->path('cache', function($request) use($app) {
-            $app->get(function($request) use($app) {
+        $app->path('cache', function($request) {
+            $this->get(function($request) {
                 return (new \Bullet\Response('CONTENT', 200))->cache(false);
             });
         });
@@ -300,8 +300,8 @@ class RequestTest extends \PHPUnit_Framework_TestCase
         $req = new Bullet\Request('GET', '/cache');
         $currentTime = time();
         $cacheTime = strtotime('+1 hour', $currentTime);
-        $app->path('cache', function($request) use($app, $cacheTime) {
-            $app->get(function($request) use($app, $cacheTime) {
+        $app->path('cache', function($request) use($cacheTime) {
+            $this->get(function($request) use($cacheTime) {
                 return (new \Bullet\Response('CONTENT', 200))->cache($cacheTime);
             });
         });
@@ -317,8 +317,8 @@ class RequestTest extends \PHPUnit_Framework_TestCase
         $req = new Bullet\Request('GET', '/cache');
         $currentTime = time();
         $cacheTime = new \DateTime('+1 hour');
-        $app->path('cache', function($request) use($app, $cacheTime) {
-            $app->get(function($request) use($app, $cacheTime) {
+        $app->path('cache', function($request) use($cacheTime) {
+            $this->get(function($request) use($cacheTime) {
                 return (new \Bullet\Response('CONTENT', 200))->cache($cacheTime);
             });
         });
@@ -334,8 +334,8 @@ class RequestTest extends \PHPUnit_Framework_TestCase
         $req = new Bullet\Request('GET', '/cache');
         $currentTime = time();
         $cacheTime = '1 hour';
-        $app->path('cache', function($request) use($app, $cacheTime) {
-            $app->get(function($request) use($app, $cacheTime) {
+        $app->path('cache', function($request) use($cacheTime) {
+            $this->get(function($request) use($cacheTime) {
                 return (new \Bullet\Response('CONTENT', 200))->cache($cacheTime);
             });
         });
@@ -351,8 +351,8 @@ class RequestTest extends \PHPUnit_Framework_TestCase
         $req = new Bullet\Request('GET', '/cache');
         $currentTime = time();
         $cacheTime = 3600;
-        $app->path('cache', function($request) use($app, $cacheTime) {
-            $app->get(function($request) use($app, $cacheTime) {
+        $app->path('cache', function($request) use($cacheTime) {
+            $this->get(function($request) use($cacheTime) {
                 return (new \Bullet\Response('CONTENT', 200))->cache($cacheTime);
             });
         });
@@ -365,8 +365,8 @@ class RequestTest extends \PHPUnit_Framework_TestCase
     function testGetWithQueryString()
     {
         $app = new Bullet\App();
-        $app->path('test', function($request) use($app) {
-            $app->get(function($request) {
+        $app->path('test', function($request) {
+            $this->get(function($request) {
                 return 'foo=' . $request->foo;
             });
         });
@@ -385,9 +385,9 @@ class RequestTest extends \PHPUnit_Framework_TestCase
     public function testUrlHelperReturnsRequestedUrl()
     {
         $app = new Bullet\App();
-		$app->path('test', function($request) use($app) {
+		$app->path('test', function($request) {
 			$collect[] = 'test';
-			$app->path('foo', function($request) use($app) {
+			$this->path('foo', function($request) {
 				return $request->url();
 			});
 		});

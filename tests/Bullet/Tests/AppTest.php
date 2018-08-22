@@ -138,10 +138,10 @@ class AppTest extends \PHPUnit_Framework_TestCase
         $collect = array();
 
         $app = new Bullet\App();
-        $app->path('', function($request) use($app, &$collect) {
+        $app->path('', function($request) use(&$collect) {
             $collect[] = 'root';
         });
-        $app->path('notmatched', function($request) use($app, &$collect) {
+        $app->path('notmatched', function($request) use(&$collect) {
             $collect[] = 'notmatched';
         });
 
@@ -296,7 +296,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
 				// GET
 				$this->get(function($request) {
 					// Should not be returned
-					return new \Bullet\Response(418, "Teapot");
+					return new \Bullet\Response("Teapot", 418);
 				});
 
 				// Should be returned
@@ -370,7 +370,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
 
         $response = $app->run(new Bullet\Request('PUT', 'methodnotallowed'));
         $this->assertEquals(405, $response->status());
-        $this->assertEquals('GET,POST', $response->header('Allow'));
+        $this->assertEquals('GET,POST,OPTIONS', $response->header('Allow'));
     }
 
     public function testPathParamCaptureFirst()
@@ -544,7 +544,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
     {
         $app = new Bullet\App();
 		$app->path('test', function($request) {
-			$app->path('foo', function() {
+			$this->path('foo', function() {
                 $this->get(function () {
                     $this->format('json', function() {
 						return array('foo' => 'bar', 'bar' => 'baz');
@@ -602,7 +602,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
         $app = new Bullet\App();
 		$app->path('posts', function($request) {
 			$this->post(function() {
-				return new \Bullet\Response(201, 'Created something!');
+				return new \Bullet\Response('Created something!', 201);
 			});
 		});
 
@@ -616,7 +616,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
 		$app->path('posts', function($request) {
 			$this->post(function() {
 				$this->format('json', function() {
-					return new \Bullet\Response(201, array('created' => 'something'));
+					return new \Bullet\Response(array('created' => 'something'), 201);
 				});
 			});
 		});

@@ -643,7 +643,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
     {
         $app = new Bullet\App();
 
-		$this->path('test', function($request) {
+		$app->path('test', function($request) {
 			throw new \InvalidArgumentException("This is a specific error message here!");
 		});
 

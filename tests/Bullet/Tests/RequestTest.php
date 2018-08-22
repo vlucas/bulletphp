@@ -64,19 +64,21 @@ class RequestTest extends \PHPUnit_Framework_TestCase
         $req = new Bullet\Request('PUT', '/foo', array(), array('Accept' => 'application/json'));
         $this->assertEquals('json', $req->format());
 
-        $app->path('foo', function($request) use($app) {
-            $app->format('json', function($request) {
-                return array('foo' => 'bar');
-            });
-            $app->format('html', function($request) {
-                return '<html></html>';
+        $app->path('foo', function($request) {
+            $this->put(function() {
+                $this->format('json', function($request) {
+                    return array('foo' => 'bar');
+                });
+                $this->format('html', function($request) {
+                    return '<html></html>';
+                });
             });
         });
 
         $res = $app->run($req);
 
-        $this->assertEquals('application/json', $res->contentType());
         $this->assertEquals('{"foo":"bar"}', $res->content());
+        $this->assertEquals('application/json', $res->contentType());
     }
 
     function testAcceptAnyReturnsFirstFormat()
@@ -85,18 +87,21 @@ class RequestTest extends \PHPUnit_Framework_TestCase
 
         // Accept only JSON and request URL with no extension
         $req = new Bullet\Request('GET', '/foo', array(), array('Accept' => '*/*'));
-        $app->path('foo', function($request) use($app) {
-            $app->format('json', function($request) {
-                return array('foo' => 'bar');
-            });
-            $app->format('html', function($request) {
-                return '<html></html>';
+        $this->assertEquals(null, $req->format());
+
+        $app->path('foo', function($request) {
+            $this->get(function() {
+                $this->format('json', function($request) {
+                    return array('foo' => 'bar');
+                });
+                $this->format('html', function($request) {
+                    return '<html></html>';
+                });
             });
         });
 
         $res = $app->run($req);
 
-        $this->assertEquals(null, $req->format());
         $this->assertEquals('{"foo":"bar"}', $res->content());
         $this->assertEquals('application/json', $res->contentType());
     }
@@ -106,9 +111,11 @@ class RequestTest extends \PHPUnit_Framework_TestCase
         $app = new Bullet\App();
         // Accept only JSON and request URL with no extension
         $req = new Bullet\Request('GET', '/foo', array());
-        $app->path('foo', function($request) use($app) {
-            $app->format('json', function($request) {
-                return array('foo' => 'bar');
+        $app->path('foo', function($request) {
+            $this->get(function() {
+                $this->format('json', function($request) {
+                    return array('foo' => 'bar');
+                });
             });
         });
         $res = $app->run($req);
@@ -230,8 +237,8 @@ class RequestTest extends \PHPUnit_Framework_TestCase
             });
         });
         $res = $app->run($req);
-        $this->assertEquals('OK', $res->content());
         $this->assertEquals('GET,POST,OPTIONS', $res->header('Allow'));
+        $this->assertEquals('OK', $res->content());
     }
 
     function testOptionsHeaderForParamPaths()
@@ -279,7 +286,7 @@ class RequestTest extends \PHPUnit_Framework_TestCase
         $req = new Bullet\Request('GET', '/cache');
         $app->path('cache', function($request) use($app) {
             $app->get(function($request) use($app) {
-                return (new \Bullet\Response(200, 'CONTENT'))->cache(false);
+                return (new \Bullet\Response('CONTENT', 200))->cache(false);
             });
         });
         $res = $app->run($req);
@@ -295,7 +302,7 @@ class RequestTest extends \PHPUnit_Framework_TestCase
         $cacheTime = strtotime('+1 hour', $currentTime);
         $app->path('cache', function($request) use($app, $cacheTime) {
             $app->get(function($request) use($app, $cacheTime) {
-                return (new \Bullet\Response(200, 'CONTENT'))->cache($cacheTime);
+                return (new \Bullet\Response('CONTENT', 200))->cache($cacheTime);
             });
         });
         $res = $app->run($req);
@@ -312,7 +319,7 @@ class RequestTest extends \PHPUnit_Framework_TestCase
         $cacheTime = new \DateTime('+1 hour');
         $app->path('cache', function($request) use($app, $cacheTime) {
             $app->get(function($request) use($app, $cacheTime) {
-                return (new \Bullet\Response(200, 'CONTENT'))->cache($cacheTime);
+                return (new \Bullet\Response('CONTENT', 200))->cache($cacheTime);
             });
         });
         $res = $app->run($req);
@@ -329,7 +336,7 @@ class RequestTest extends \PHPUnit_Framework_TestCase
         $cacheTime = '1 hour';
         $app->path('cache', function($request) use($app, $cacheTime) {
             $app->get(function($request) use($app, $cacheTime) {
-                return (new \Bullet\Response(200, 'CONTENT'))->cache($cacheTime);
+                return (new \Bullet\Response('CONTENT', 200))->cache($cacheTime);
             });
         });
         $res = $app->run($req);
@@ -346,7 +353,7 @@ class RequestTest extends \PHPUnit_Framework_TestCase
         $cacheTime = 3600;
         $app->path('cache', function($request) use($app, $cacheTime) {
             $app->get(function($request) use($app, $cacheTime) {
-                return (new \Bullet\Response(200, 'CONTENT'))->cache($cacheTime);
+                return (new \Bullet\Response('CONTENT', 200))->cache($cacheTime);
             });
         });
         $res = $app->run($req);

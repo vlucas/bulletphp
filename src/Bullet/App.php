@@ -166,8 +166,16 @@ class App extends Container
 
             // The URI has been processed. Call the appropriate method callback
             if (!array_key_exists($method, $this->currentCallbacks)) {
-                // Nope, we can't serve this URI, 405 Not Allowed
-                return new Response(null, 405, ['Allow' => implode(',', array_keys($this->currentCallbacks))]);
+                $allowedMethods = array_keys($this->currentCallbacks);
+                $allowedMethods[] = 'OPTIONS';
+                $allowedMethods = implode(',', array_unique($allowedMethods));
+                if ($method === 'OPTIONS') {
+                    // It's OPTIONS, let's serve it.
+                    return new Response('OK', 200, ['Allow' => $allowedMethods]);
+                } else {
+                    // Nope, we can't serve this URI, 405 Not Allowed
+                    return new Response(null, 405, ['Allow' => $allowedMethods]);
+                }
             }
 
             // There indeed is a method callback, so let's call it!
@@ -197,20 +205,26 @@ class App extends Container
                 }
             } else {
                 // Ok, no file extension, so try the formats decyphered from the "Accept" header
-                if (!array_key_exists('format', $this->currentCallbacks)) {
+                if (empty($this->currentCallbacks['format'])) {
                     // No format handlers are specified, can't do anything right now.
                     return new Response(null, 404);
                 }
 
                 $c = null;
                 foreach ($request->formats() as $format) {
+                    // Try to find a specific requested format
                     if (array_key_exists($format, $this->currentCallbacks['format'])) {
                         $c = $this->currentCallbacks['format'][$format];
                         break;
                     }
                 }
+                // Default format handler. TODO: do we need this?
                 if ($c == null && array_key_exists('', $this->currentCallbacks['format'])) {
                     $c = $this->currentCallbacks['format'][''];
+                }
+                // Run the first format handler in the array
+                if ($c == null) {
+                    $c = array_values($this->currentCallbacks['format'])[0];
                 }
                 if ($c != null) {
                     $this->currentCallbacks = [];

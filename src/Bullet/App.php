@@ -11,8 +11,15 @@ class App extends Container
 
     public function __construct()
     {
-        $this->rootCallbacks = [];
-        $this->currentCallbacks = &$this->rootCallbacks;
+        $this->rootCallbacks = null;
+        $this->currentCallbacks = [];
+    }
+
+    public function createCallbackSnapshot()
+    {
+        if ($this->rootCallbacks == null) {
+            $this->rootCallbacks = $this->currentCallbacks;
+        }
     }
 
     protected function executeCallback(\Closure $c, array $params = [])
@@ -102,7 +109,8 @@ class App extends Container
     public function run_(Request $request)
     {
         // Save the app's URL parser state (e.g. the current callback map)
-        $currentCallbacks = $this->currentCallbacks;
+        $savedCallbacks = $this->currentCallbacks;
+        $this->createCallbackSnapshot();
         $this->currentCallbacks = $this->rootCallbacks;
 
         $response = null;
@@ -213,7 +221,7 @@ class App extends Container
 
             return new Response(null, 501); // Got no error, but got no response either. This is "Not Implemented".
         } finally {
-            $this->currentCallbacks = &$currentCallbacks;
+            $this->currentCallbacks = $savedCallbacks;
         }
     }
 

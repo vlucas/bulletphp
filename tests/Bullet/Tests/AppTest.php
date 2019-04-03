@@ -378,11 +378,11 @@ class AppTest extends \PHPUnit_Framework_TestCase
         $app = new Bullet\App();
 		$app->path('paramtest', function($request) {
 			// Digit
-			$this->param(function ($value) { return ctype_digit($value);}, function($request, $id) {
+			$this->param(function ($request, $value) { return ctype_digit($value);}, function($request, $id) {
 				return $id;
 			});
 			// Alphanumeric
-			$this->param(function ($value) { return ctype_alnum($value);}, function($request, $slug) {
+			$this->param(function ($request, $value) { return ctype_alnum($value);}, function($request, $slug) {
 				return $slug;
 			});
 		});
@@ -397,11 +397,11 @@ class AppTest extends \PHPUnit_Framework_TestCase
         $app = new Bullet\App();
 		$app->path('paramtest', function($request) {
 			// Digit
-			$this->param(function ($value) { return ctype_digit($value);}, function($request, $id) {
+			$this->param(function ($request, $value) { return ctype_digit($value);}, function($request, $id) {
 				return $id;
 			});
 			// All printable characters except space
-			$this->param(function ($value) { return ctype_graph($value);}, function($request, $slug) {
+			$this->param(function ($request, $value) { return ctype_graph($value);}, function($request, $slug) {
 				return $slug;
 			});
 		});
@@ -755,7 +755,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
         });
 
         $request = new \Bullet\Request('GET', '/', [], ['Host' => 'test.bulletphp.com']);
-        $result = $app->run($request);
+        $result = $app->run_($request);
 
         $this->assertEquals(200, $result->status());
         $this->assertEquals("GET subdomain test", $result->content());

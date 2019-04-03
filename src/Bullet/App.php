@@ -91,7 +91,7 @@ class App extends Container
             // This needs a linear search trhough the param filters
             $c = null;
             foreach ($this->currentCallbacks['param'] as $filterCallbackTuple) {
-                if ($filterCallbackTuple[0]($part)) {
+                if ($filterCallbackTuple[0]($request, $part)) {
                     $c = $filterCallbackTuple[1];
                     break;
                 }
@@ -304,19 +304,19 @@ class App extends Container
      */
     public function path($part, \Closure $callback)
     {
-        $this->param(function ($_part) use ($part) {
-            return $_part == $part;
+        $this->param(function ($request, $part_) use ($part) {
+            return $part_ == $part;
         }, $callback);
     }
 
     /***
-     * The _param method exposes the API for defining param callbacks
+     * The param_ method exposes the API for defining param callbacks
      * that return a tuple of [$request, $advance]. This is useful for
      * defining param callbacks that may or may not need to advance
      * the URL parser after successfully firing a callback. See
      * normal param() / path() vs. domain() / subdomain() callbacks
      */
-    public function _param(\Closure $filter, \Closure $callback)
+    public function param_(\Closure $filter, \Closure $callback)
     {
         $this->currentCallbacks['param'][] = [$filter, $callback];
     }
@@ -326,7 +326,7 @@ class App extends Container
      */
     public function param(\Closure $filter, \Closure $callback)
     {
-        $this->_param($filter, function ($request, $part) use ($callback) {
+        $this->param_($filter, function ($request, $part) use ($callback) {
             $callback = \Closure::bind($callback, $this);
             $response = call_user_func($callback, $request, $part);
     
@@ -393,12 +393,32 @@ class App extends Container
 
     public function domain(string $domain, \Closure $callback)
     {
-        $this->currentCallbacks['domain'][$domain] = $callback;
+        $this->param_(
+            function ($request, $part) {
+                return $request->host() == $part;
+            },
+            function ($request, $part) use ($callback) {
+                $callback = \Closure::bind($callback, $this);
+                $response = call_user_func($callback, $request, $part);
+
+                return [$response, false];
+            }
+        );
     }
 
     public function subdomain(string $subdomain, \Closure $callback)
     {
-        $this->currentCallbacks['subdomain'][$subdomain] = $callback;
+        $this->param_(
+            function ($request, $part) {
+                return $request->subdomain() == $part;
+            },
+            function ($request, $part) use ($callback) {
+                $callback = \Closure::bind($callback, $this);
+                $response = call_user_func($callback, $request, $part);
+
+                return [$response, false];
+            }
+        );
     }
 
     public function helper($name, $className = null)
@@ -430,14 +450,14 @@ class App extends Container
 
     public static function paramInt()
     {
-        return function($value) {
+        return function($request, $value) {
             return filter_var($value, FILTER_VALIDATE_INT);
         };
     }
 
     public static function paramFloat()
     {
-        return function($value) {
+        return function($request, $value) {
             return filter_var($value, FILTER_VALIDATE_FLOAT);
         };
     }
@@ -449,7 +469,7 @@ class App extends Container
      */
     public static function paramBoolean()
     {
-        return function($value) {
+        return function($request, $value) {
             $filtered = filter_var($value, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
             return (!empty($filtered) && $filtered !== null);
         };
@@ -457,14 +477,14 @@ class App extends Container
 
     public static function paramSlug()
     {
-        return function($value) {
+        return function($request, $value) {
             return (preg_match("/[a-zA-Z0-9-_]/", $value) > 0);
         };
     }
 
     public static function paramEmail()
     {
-        return function($value) {
+        return function($request, $value) {
             return filter_var($value, FILTER_VALIDATE_EMAIL);
         };
     }

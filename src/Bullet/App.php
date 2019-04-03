@@ -8,11 +8,45 @@ class App extends Container
     protected $rootCallbacks;
     protected $currentCallbacks;
     protected $exceptionHandler;
+    protected $responseHandlers;
 
     public function __construct()
     {
         $this->rootCallbacks = null;
         $this->currentCallbacks = [];
+        $this->responseHandlers = [];
+
+        $this->registerResponseHandler(
+            function ($response) {
+                return is_string($response);
+            },
+            function ($response, $status, $headers) {
+                return new Response($response, $status, $headers);
+            },
+            'string'
+        );
+
+        $this->registerResponseHandler(
+            function ($response) {
+                return is_int($response);
+            },
+            function ($response, $status, $headers) {
+                return new Response(null, $response, $headers);
+            },
+            'int'
+        );
+
+        $this->registerResponseHandler(
+            function ($response) {
+                return is_array($response);
+            },
+            function ($response, $status, $headers) {
+                $r = new Response(json_encode($response), $status, $headers);
+                $r->contentType('application/json');
+                return $r;
+            },
+            'array'
+        );
     }
 
     public function createCallbackSnapshot()
@@ -22,23 +56,14 @@ class App extends Container
         }
     }
 
-    public function make($content = null, $status = 200, array $headers = [])
+    public function response($content, int $status = 200, array $headers = [])
     {
-        // TODO: we should handle response types in configurable handlers.
-        $r = null;
-        if (is_string($content)) {
-            $r = new Response($content, 200, $headers);
+        foreach ($this->responseHandlers as $rh) {
+            if ($rh[0]($content)) {
+                return $rh[1]($content, $status, $headers);
+            }
         }
-
-        if (is_int($content)) {
-            $r = new Response(null, $content, $headers);
-        }
-
-        if (is_array($content)) {
-            $r = new Response(json_encode($content), $status, $headers);
-            $r->header('Content-Type', 'application/json');
-        }
-        return $r;
+        return null;
     }
 
     /**
@@ -59,7 +84,7 @@ class App extends Container
             return $response;
         }
 
-        return $this->make($response);
+        return $this->response($response);
     }
 
     // TODO: can we merge this with the one above?
@@ -72,7 +97,7 @@ class App extends Container
             return [$response, $advance];
         }
 
-        return [$this->make($response), $advance];
+        return [$this->response($response), $advance];
     }
     /**
      * Run app with given Request
@@ -467,9 +492,9 @@ class App extends Container
     public function registerResponseHandler(\Closure $filter, \Closure $handler, string $name = null)
     {
         if ($name !== null) {
-            $this->responseHandlers[$name] = [$filter, $handler];
+            $this->responseHandlers = [$name => [$filter, $handler]] + $this->responseHandlers;
         } else {
-            $this->responseHandlers[] = [$filter, $handler];
+            $this->responseHandlers = [[$filter, $handler]] + $this->responseHandlers;
         }
     }
 

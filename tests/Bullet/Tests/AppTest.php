@@ -571,7 +571,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
 			});
 			$this->post(function($request) {
 				$this->format('json', function() {
-					return $this->make(['created' => 'something'], 201);
+					return $this->response(['created' => 'something'], 201);
 				});
 			});
 		});
@@ -915,11 +915,13 @@ class AppTest extends \PHPUnit_Framework_TestCase
 
         $app->registerResponseHandler(
             function($response) {
-                return $response->content() instanceof TestHelper;
+                return $response instanceof TestHelper;
             },
-            function($response) {
+            function($content) {
+                $response = new \Bullet\Response();
                 $response->contentType('text/plain');
-                $response->content($response->content()->something());
+                $response->content($content->something());
+                return $response;
             }
         );
 
@@ -930,40 +932,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals('text/plain', $result->contentType());
     }
 
-    public function testThatAllApplicableResponseHandlersAreApplied()
-    {
-        $app = new Bullet\App();
-        $app->path('', function($request) {
-            return 'a';
-        });
-
-        // Always extend my response as condition returns true
-        $app->registerResponseHandler(
-            function($response) {
-                return true;
-            },
-            function($response) {
-                $response->content($response->content() . 'b');
-            }
-        );
-
-        // Condition returns false so handler should not be applied
-        $app->registerResponseHandler(
-            function($response) {
-                return false;
-            },
-            function($response) {
-                $response->content($response->content() . 'c');
-            }
-        );
-
-        $request = new \Bullet\Request('GET', '/');
-        $result = $app->run($request);
-
-        $this->assertEquals('ab', $result->content());
-    }
-
-    public function testThatUserResponseHandlersOverrideDefaults()
+    public function testThatUserResponseHandlerCanOverrideDefaults()
     {
         $app = new Bullet\App();
         $app->path('', function($request) {
@@ -971,14 +940,16 @@ class AppTest extends \PHPUnit_Framework_TestCase
         });
 
         $app->registerResponseHandler(
-            function($response) {
-                return is_array($response->content());
+            function($content) {
+                return is_array($content);
             },
-            function($response) {
-                $response->contentType('text/plain');
-                $response->content('this is not json');
+            function($content) {
+                $r = new \Bullet\Response();
+                $r->contentType('text/plain');
+                $r->content('this is not json');
+                return $r;
             },
-            'array_json'
+            'array' // This is the name of the default handler
         );
 
         $request = new \Bullet\Request('GET', '/');
@@ -988,20 +959,6 @@ class AppTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals('text/plain', $result->contentType());
     }
 
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage Third argument to Bullet\App::registerResponseHandler must be a string. Given argument was not a string.
-     */
-    public function testThatResponseHandlerNamesMustBeAString()
-    {
-        $app = new Bullet\App();
-        $app->registerResponseHandler(
-            function($response) { return true; },
-            function($response) {},
-            123
-        );
-    }
-
     public function testThatDefaultResponseHandlerMayBeRemoved()
     {
         $app = new Bullet\App();
@@ -1009,12 +966,16 @@ class AppTest extends \PHPUnit_Framework_TestCase
             return ['a'];
         });
 
-        $app->removeResponseHandler('array_json');
+        $app->removeResponseHandler('array');
 
         $request = new \Bullet\Request('GET', '/');
         $result = $app->run($request);
 
-        $this->assertEquals(array('a'), $result->content());
+        // Since we're missing a response handler,
+        // we can't handle the request either.
+        // => Method not allowed.
+        $this->assertEquals(405, $result->status());
+        $this->assertEquals(null, $result->content());
     }
 
     public function testThatUserResponseHandlersMayBeRemoved()
@@ -1028,7 +989,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
         $app->registerResponseHandler(
             function() { return true; },
             function($response) {
-                $response->content('bar');
+                return new \Bullet\Response('bar');
             },
             'foo'
         );
@@ -1037,6 +998,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals('bar', $result->content());
 
         $app->removeResponseHandler('foo');
+
         $result = $app->run($request);
         $this->assertEquals('foo', $result->content());
     }
@@ -1052,7 +1014,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
         $app->registerResponseHandler(
             function() { return true; },
             function($response) {
-                $response->content('bar');
+                return new \Bullet\Response('bar');
             }
         );
 

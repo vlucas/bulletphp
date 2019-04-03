@@ -22,6 +22,25 @@ class App extends Container
         }
     }
 
+    public function make($content = null, $status = 200, array $headers = [])
+    {
+        // TODO: we should handle response types in configurable handlers.
+        $r = null;
+        if (is_string($content)) {
+            $r = new Response($content, 200, $headers);
+        }
+
+        if (is_int($content)) {
+            $r = new Response(null, $content, $headers);
+        }
+
+        if (is_array($content)) {
+            $r = new Response(json_encode($content), $status, $headers);
+            $r->header('Content-Type', 'application/json');
+        }
+        return $r;
+    }
+
     /**
      * Execute a callback. Returns a Response or null.
      * 
@@ -40,7 +59,7 @@ class App extends Container
             return $response;
         }
 
-        return Response::make($response);
+        return $this->make($response);
     }
 
     // TODO: can we merge this with the one above?
@@ -53,7 +72,7 @@ class App extends Container
             return [$response, $advance];
         }
 
-        return [Response::make($response), $advance];
+        return [$this->make($response), $advance];
     }
     /**
      * Run app with given Request
@@ -445,12 +464,18 @@ class App extends Container
         }
     }
 
-    public function registerResponseHandler()
+    public function registerResponseHandler(\Closure $filter, \Closure $handler, string $name = null)
     {
+        if ($name !== null) {
+            $this->responseHandlers[$name] = [$filter, $handler];
+        } else {
+            $this->responseHandlers[] = [$filter, $handler];
+        }
     }
 
-    public function removeResponseHandler()
+    public function removeResponseHandler(string $name)
     {
+        unset($this->responseHandlers[$name]);
     }
 
     public static function paramInt()

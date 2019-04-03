@@ -571,7 +571,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
 			});
 			$this->post(function($request) {
 				$this->format('json', function() {
-					return \Bullet\Response::make(['created' => 'something'], 201);
+					return $this->make(['created' => 'something'], 201);
 				});
 			});
 		});
@@ -937,21 +937,13 @@ class AppTest extends \PHPUnit_Framework_TestCase
             return 'a';
         });
 
-        // Always extend my response
-        $app->registerResponseHandler(
-            null,
-            function($response) {
-                $response->content($response->content() . 'b');
-            }
-        );
-
-        // Further extend the response as condition returns true
+        // Always extend my response as condition returns true
         $app->registerResponseHandler(
             function($response) {
                 return true;
             },
             function($response) {
-                $response->content($response->content() . 'c');
+                $response->content($response->content() . 'b');
             }
         );
 
@@ -961,14 +953,14 @@ class AppTest extends \PHPUnit_Framework_TestCase
                 return false;
             },
             function($response) {
-                $response->content($response->content() . 'd');
+                $response->content($response->content() . 'c');
             }
         );
 
         $request = new \Bullet\Request('GET', '/');
         $result = $app->run($request);
 
-        $this->assertEquals('abc', $result->content());
+        $this->assertEquals('ab', $result->content());
     }
 
     public function testThatUserResponseHandlersOverrideDefaults()

@@ -764,11 +764,6 @@ class AppTest extends \PHPUnit_Framework_TestCase
     public function testSubdomainRouteAfterMethodHandler()
     {
         $app = new Bullet\App();
-        $app->path('', function() {
-			$this->get(function($request) {
-				return "GET main path";
-			});
-		});
         $app->subdomain('bar', function($request) {
             $this->path('', function($request) {
                 $this->get(function($request) {
@@ -776,6 +771,11 @@ class AppTest extends \PHPUnit_Framework_TestCase
                 });
             });
         });
+        $app->path('', function() {
+			$this->get(function($request) {
+				return "GET main path";
+			});
+		});
 
         $request = new \Bullet\Request('GET', '/', array(), array('Host' => 'bar.bulletphp.com'));
         $result = $app->run($request);
@@ -828,7 +828,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
     public function testDomainRoute()
     {
         $app = new Bullet\App();
-        $app->domain('example.com', function($request) {
+        $app->domain('www.example.com', function($request) {
             $this->path('', function($request) {
                 $this->get(function($request) {
                     return "GET " . $request->host();
@@ -863,7 +863,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
     public function testDomainRoute404OnRequestedDomain()
     {
         $app = new Bullet\App();
-        $app->domain('example.com', function($request) {
+        $app->domain('www.example.com', function($request) {
             $this->path('goodpath', function($request) {
                 $this->get(function($request) {
                     return "GET " . $request->host();
@@ -875,7 +875,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
         $result = $app->run($request);
 
         $this->assertEquals(404, $result->status());
-        $this->assertEquals('Not Found', $result->content());
+        $this->assertEquals(null, $result->content());
     }
 
     public function testDefaultArrayToJSONContentConverter()

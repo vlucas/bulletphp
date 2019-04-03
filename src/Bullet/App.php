@@ -44,7 +44,7 @@ class App extends Container
     }
 
     // TODO: can we merge this with the one above?
-    protected function _executeCallback(\Closure $c, array $params = [])
+    protected function executeCallback_(\Closure $c, array $params = [])
     {
         $c = \Closure::bind($c, $this);
         list($response, $advance) = call_user_func_array($c, $params);
@@ -98,7 +98,7 @@ class App extends Container
             }
             if ($c instanceOf \Closure) {
                 $this->currentCallbacks = [];
-                return $this->_executeCallback($c, [$request, $part]);
+                return $this->executeCallback_($c, [$request, $part]);
             }
             return [new Response(null, 404), true]; // WARNING! The last $part might match a format.
         }
@@ -158,16 +158,21 @@ class App extends Container
             $i = 0;
             foreach ($parts as $part) {
                 ++$i;
-                list($response, $advance) = $this->matchCallbacks($request, $part);
-                if ($response instanceof Response && ($response->status() != 404 || $i != $pc)) {
-                    // This is not the last part, or maybe it is, but at least not a 404, so we can return it.
-                    return $response;
+                $advance = false;
+                while (!$advance) {
+                    list($response, $advance) = $this->matchCallbacks($request, $part);
+                    if ($response instanceof Response && ($response->status() != 404 || $i != $pc)) {
+                        // This is not the last part, or maybe it is, but at least not a 404, so we can return it.
+                        return $response;
+                    }
                 }
             }
 
             // If we have a 404 response, we must try to match the last URL part
             // against the name.extension pattern, and re-try the URL/param callbacks
             // for the name part, and then the format callbacks for the extension part.
+            //
+            // TODO: can this be factored out into a param callback if we allow pushing back parts into the parser?
             $format_part = null;
             $format_ext = null;
             if ($response instanceof Response && $response->status() == 404) {
@@ -394,8 +399,8 @@ class App extends Container
     public function domain(string $domain, \Closure $callback)
     {
         $this->param_(
-            function ($request, $part) {
-                return $request->host() == $part;
+            function ($request, $part) use ($domain) {
+                return $request->host() == $domain;
             },
             function ($request, $part) use ($callback) {
                 $callback = \Closure::bind($callback, $this);
@@ -409,8 +414,8 @@ class App extends Container
     public function subdomain(string $subdomain, \Closure $callback)
     {
         $this->param_(
-            function ($request, $part) {
-                return $request->subdomain() == $part;
+            function ($request, $part) use ($subdomain) {
+                return $request->subdomain() == $subdomain;
             },
             function ($request, $part) use ($callback) {
                 $callback = \Closure::bind($callback, $this);

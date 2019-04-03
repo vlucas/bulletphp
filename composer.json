@@ -4,7 +4,7 @@
     "description": "A heierarchical resource-oriented micro-framework built on nested closures instead of route-based callbacks",
     "keywords": ["framework", "microphp", "micro", "microframework", "router", "routing"],
     "homepage": "http://bulletphp.com",
-    "license" : "BSD",
+    "license" : "BSD-3-Clause",
     "authors" : [
         {
             "name": "Vance Lucas",

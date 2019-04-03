@@ -807,24 +807,6 @@ class AppTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals("GET main path", $result->content());
     }
 
-    public function testSubdomainRouteArray()
-    {
-        $app = new Bullet\App();
-        $app->subdomain(['www', false], function($request) {
-            $this->path('', function($request) {
-                $this->get(function($request) {
-                    return "GET www";
-                });
-            });
-        });
-
-        $request = new \Bullet\Request('GET', '/', [], ['Host' => 'www.bulletphp.com']);
-        $result = $app->run($request);
-
-        $this->assertEquals(200, $result->status());
-        $this->assertEquals("GET www", $result->content());
-    }
-
     public function testSubdomainFalseRouteWithNoSubdomain()
     {
         $app = new Bullet\App();

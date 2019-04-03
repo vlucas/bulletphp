@@ -22,6 +22,15 @@ class App extends Container
         }
     }
 
+    /**
+     * Execute a callback. Returns a Response or null.
+     * 
+     * A Response returned means that parsing should stop, as
+     * we already know the answer for the request.
+     * 
+     * A null response means that we don't have an answer, and
+     * parsing MAY resume.
+     */
     protected function executeCallback(\Closure $c, array $params = [])
     {
         $c = \Closure::bind($c, $this);
@@ -34,10 +43,22 @@ class App extends Container
         return Response::make($response);
     }
 
+    // TODO: can we merge this with the one above?
+    protected function _executeCallback(\Closure $c, array $params = [])
+    {
+        $c = \Closure::bind($c, $this);
+        list($response, $advance) = call_user_func_array($c, $params);
+
+        if ($response === null || $response instanceOf Response) {
+            return [$response, $advance];
+        }
+
+        return [Response::make($response), $advance];
+    }
     /**
      * Run app with given Request
      *
-     * run() ALWAYS return a Response. Returning any other type or
+     * run() ALWAYS returns a Response. Returning any other type or
      * throwing an exception is a bug.
      *
      * Internally run() calls run_() which MIGHT throw exceptions. These
@@ -57,10 +78,15 @@ class App extends Container
 
     /**
      * Looks for and executes a callback for an URL part if there's any
+     * 
+     * Returns a pair: list($response, $advance), where $response is the
+     * returned response, and $advance is a boolean. If $advance is true,
+     * the parse should count the current path element as parsed, and advance
+     * to the next. If it is false, the parser should re-try parsing the
+     * current path element even after the returned $response is null.
      */
     protected function matchCallbacks($request, $part)
     {
-        // Try to find a param match
         if (array_key_exists('param', $this->currentCallbacks)) {
             // This needs a linear search trhough the param filters
             $c = null;
@@ -72,13 +98,12 @@ class App extends Container
             }
             if ($c instanceOf \Closure) {
                 $this->currentCallbacks = [];
-                return $this->executeCallback($c, [$request, $part]);
-            } else {
-                return new Response(null, 404); // WARNING! The last $part might match a format.
+                return $this->_executeCallback($c, [$request, $part]);
             }
-        } else {
-            return new Response(null, 404); // Same WARNING as above.
+            return [new Response(null, 404), true]; // WARNING! The last $part might match a format.
         }
+
+        return [new Response(null, 404), true]; // Same WARNING as above.
     }
 
     /**
@@ -133,7 +158,7 @@ class App extends Container
             $i = 0;
             foreach ($parts as $part) {
                 ++$i;
-                $response = $this->matchCallbacks($request, $part);
+                list($response, $advance) = $this->matchCallbacks($request, $part);
                 if ($response instanceof Response && ($response->status() != 404 || $i != $pc)) {
                     // This is not the last part, or maybe it is, but at least not a 404, so we can return it.
                     return $response;
@@ -154,7 +179,7 @@ class App extends Container
                 $format_part = $_[0];
                 $format_ext = $_[1];
 
-                $response = $this->matchCallbacks($request, $format_part);
+                list($response, $advance) = $this->matchCallbacks($request, $format_part);
                 if ($response instanceof Response) {
                     // It's either a Response returned by the callback
                     // or it's a 404 returned by matchCallbacks()
@@ -271,6 +296,8 @@ class App extends Container
         $this->path($part, $callback);
     }
 
+    // TODO: should we rename 'param' handlers to 'path' handlers, as they drive the 'path' parser?
+
     /**
      * A path() callback is really just a param() callback
      * with the filter function being the exactly matching string
@@ -282,12 +309,29 @@ class App extends Container
         }, $callback);
     }
 
+    /***
+     * The _param method exposes the API for defining param callbacks
+     * that return a tuple of [$request, $advance]. This is useful for
+     * defining param callbacks that may or may not need to advance
+     * the URL parser after successfully firing a callback. See
+     * normal param() / path() vs. domain() / subdomain() callbacks
+     */
+    public function _param(\Closure $filter, \Closure $callback)
+    {
+        $this->currentCallbacks['param'][] = [$filter, $callback];
+    }
+
     /**
      * Param callbacks are tested in the order they are defiend.
      */
     public function param(\Closure $filter, \Closure $callback)
     {
-        $this->currentCallbacks['param'][] = [$filter, $callback];
+        $this->_param($filter, function ($request, $part) use ($callback) {
+            $callback = \Closure::bind($callback, $this);
+            $response = call_user_func($callback, $request, $part);
+    
+            return [$response, true];
+        });
     }
 
     /**
@@ -347,12 +391,14 @@ class App extends Container
         $this->method('OPTIONS', $callback);
     }
 
-    public function domain()
+    public function domain(string $domain, \Closure $callback)
     {
+        $this->currentCallbacks['domain'][$domain] = $callback;
     }
 
-    public function subdomain()
+    public function subdomain(string $subdomain, \Closure $callback)
     {
+        $this->currentCallbacks['subdomain'][$subdomain] = $callback;
     }
 
     public function helper($name, $className = null)

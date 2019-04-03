@@ -7,7 +7,7 @@ use Bullet\Response;
 /**
  * @backupGlobals disabled
  */
-class AppTest extends \PHPUnit_Framework_TestCase
+class AppTest extends \PHPUnit\Framework\TestCase
 {
     protected $backupGlobalsBlacklist = array('app');
 
@@ -625,12 +625,11 @@ class AppTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals(201, $actual->status());
     }
 
-    /**
-     * @expectedException \Exception
-     * @expectedExceptionMessage This is a specific error message here!
-     */
     public function testExceptionIsNotCoughtWhenCallingRun_()
     {
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessage("This is a specific error message here!");
+
         $app = new Bullet\App();
 		$app->path('test', function($request) {
 			throw new \Exception("This is a specific error message here!");

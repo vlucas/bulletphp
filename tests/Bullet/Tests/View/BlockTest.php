@@ -3,9 +3,9 @@ namespace Bullet\Tests\View;
 use Bullet;
 use Bullet\View\Template;
 
-class BlockTest extends \PHPUnit_Framework_TestCase
+class BlockTest extends \PHPUnit\Framework\TestCase
 {
-    public function setUp()
+    public function setUp(): void
     {
         $this->templateDir = dirname(dirname(dirname(__DIR__))) . '/fixtures/templates/';
 
@@ -18,7 +18,7 @@ class BlockTest extends \PHPUnit_Framework_TestCase
         ));
     }
 
-    public function tearDown()
+    public function tearDown(): void
     {
         // Restore config to original state
         Template::config($this->oldConfig);

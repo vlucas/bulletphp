@@ -1,7 +1,7 @@
 <?php
 namespace Bullet\Tests;
 
-class ChunkedTest extends \PHPUnit_Framework_TestCase
+class ChunkedTest extends \PHPUnit\Framework\TestCase
 {
     private $_testContent = [
         "The", " ", "quick", " brown", " fox ", "jumps", " over ", "the ",

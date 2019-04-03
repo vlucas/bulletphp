@@ -1,7 +1,7 @@
 <?php
 namespace Bullet\Tests;
 
-class SseResponseTest extends \PHPUnit_Framework_TestCase
+class SseResponseTest extends \PHPUnit\Framework\TestCase
 {
     private $_testContent = [
         [

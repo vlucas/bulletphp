@@ -5,7 +5,7 @@ use Bullet;
 /**
  * Unit tests for \Bullet\Response.
  */
-class ResponseTest extends \PHPUnit_Framework_TestCase
+class ResponseTest extends \PHPUnit\Framework\TestCase
 {
     /**
      * @var \Bullet\Response Subject under test
@@ -15,7 +15,7 @@ class ResponseTest extends \PHPUnit_Framework_TestCase
     /**
      * Set up a clean test fixture.
      */
-    protected function setUp()
+    protected function setUp(): void
     {
         $this->response = new Bullet\Response();
     }

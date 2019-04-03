@@ -2,7 +2,7 @@
 namespace Bullet\Tests;
 use Bullet;
 
-class RequestTest extends \PHPUnit_Framework_TestCase
+class RequestTest extends \PHPUnit\Framework\TestCase
 {
     function testMethod()
     {

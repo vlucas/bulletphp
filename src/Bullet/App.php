@@ -186,7 +186,7 @@ class App extends Container
         try {
             // Remove empty path elements
             $uri = $request->path();
-            //$parts = [''];
+            $parts = [];
             foreach (explode('/', $uri) as $part) {
                 if ($part != '') {
                     $parts[] = $part;

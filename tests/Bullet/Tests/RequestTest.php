@@ -332,17 +332,19 @@ class RequestTest extends \PHPUnit\Framework\TestCase
     {
         $app = new Bullet\App();
         $req = new Bullet\Request('GET', '/cache');
-        $currentTime = time();
-        $cacheTime = '1 hour';
-        $app->path('cache', function($request) use($cacheTime) {
-            $this->get(function($request) use($cacheTime) {
-                return (new \Bullet\Response('CONTENT', 200))->cache($cacheTime);
+        $cacheTime = NULL;
+        $app->path('cache', function($request) use(&$cacheTime) {
+            $this->get(function($request) use(&$cacheTime) {
+                $r = new \Bullet\Response('CONTENT', 200);
+                $r->cache('+1 hour');
+                $cacheTime = $r->cache();
+                return $r;
             });
         });
         $res = $app->run($req);
         $this->assertEquals('CONTENT', $res->content());
-        $this->assertEquals('public, max-age=3600', $res->header('Cache-Control'));
-        $this->assertEquals(gmdate("D, d M Y H:i:s", strtotime($cacheTime)), $res->header('Expires'));
+        $this->assertEquals("public, max-age=3600", $res->header('Cache-Control'));
+        $this->assertEquals(gmdate("D, d M Y H:i:s", $cacheTime), $res->header('Expires'));
     }
 
     function testCacheWithSeconds()
@@ -350,16 +352,19 @@ class RequestTest extends \PHPUnit\Framework\TestCase
         $app = new Bullet\App();
         $req = new Bullet\Request('GET', '/cache');
         $currentTime = time();
-        $cacheTime = 3600;
+        $maxAge = 3600;
+        $cacheTime = $currentTime + $maxAge;
         $app->path('cache', function($request) use($cacheTime) {
             $this->get(function($request) use($cacheTime) {
-                return (new \Bullet\Response('CONTENT', 200))->cache($cacheTime);
+                $r = new \Bullet\Response('CONTENT', 200);
+                $r->cache($cacheTime);
+                return $r;
             });
         });
         $res = $app->run($req);
         $this->assertEquals('CONTENT', $res->content());
-        $this->assertEquals('public, max-age=3600', $res->header('Cache-Control'));
-        $this->assertEquals(gmdate("D, d M Y H:i:s", $currentTime+$cacheTime), $res->header('Expires'));
+        $this->assertEquals("public, max-age=$maxAge", $res->header('Cache-Control'));
+        $this->assertEquals(gmdate("D, d M Y H:i:s", $cacheTime), $res->header('Expires'));
     }
 
     function testGetWithQueryString()

@@ -157,6 +157,8 @@ class Response
             return $this->_cacheTime;
         }
 
+        $now = time();
+
         if($time instanceof \DateTime) {
             $time = $time->getTimestamp();
         } elseif(is_string($time)) {
@@ -164,7 +166,7 @@ class Response
         } elseif(is_int($time)) {
             // Given time not a timestamp, assume seconds to add to current time
             if(strlen($time) < 10) {
-                $time = time() + $time;
+                $time = $now + $time;
             }
         }
 
@@ -173,7 +175,7 @@ class Response
             $this->header('Cache-Control', 'no-cache, no-store');
         } else {
             // Max-age is seconds from now
-            $this->header('Cache-Control', 'public, max-age=' . ($time - time()));
+            $this->header('Cache-Control', 'public, max-age=' . ($time - $now));
             $this->header('Expires', gmdate("D, d M Y H:i:s", $time));
         }
 

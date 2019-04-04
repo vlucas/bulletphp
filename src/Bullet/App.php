@@ -10,9 +10,9 @@ class App extends Container
     protected $exceptionHandler;
     protected $responseHandlers;
 
-    public function __construct()
+    public function __construct(array $config = [])
     {
-        parent::__construct();
+        parent::__construct($config);
 
         $this->rootCallbacks = null;
         $this->currentCallbacks = [];

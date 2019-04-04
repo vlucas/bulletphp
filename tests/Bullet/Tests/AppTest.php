@@ -11,6 +11,24 @@ class AppTest extends \PHPUnit\Framework\TestCase
 {
     protected $backupGlobalsBlacklist = array('app');
 
+    public function testPimpleIntegration()
+    {
+        $app = new Bullet\App(['k1' => 'v1', 'k2' => 2]);
+
+        $this->assertEquals('v1', $app['k1']);
+        $this->assertEquals(2, $app['k2']);
+
+        $app['lazyFetch'] = function () {
+            return rand();
+        };
+        $this->assertEquals($app['lazyFetch'], $app['lazyFetch']);
+
+        $app['factory'] = $app->factory(function () {
+            return rand();
+        });
+        $this->assertNotEquals($app['factory'], $app['factory']);
+    }
+
     public function testSinglePathGet()
     {
         $collect = [];

@@ -367,5 +367,38 @@ class RequestTest extends \PHPUnit_Framework_TestCase
         $second_request = new Bullet\Request('GET', '/', array());
         $this->assertNull($second_request->foo);
     }
+
+    public function testRequestIpClientId()
+    {
+        $req = new Bullet\Request();
+
+        unset($_SERVER['REMOTE_ADDR']);
+        unset($_SERVER['HTTP_X_FORWARDED_FOR']);
+        $_SERVER['HTTP_CLIENT_IP'] = "192.168.1.1";
+
+        $this->assertEquals("192.168.1.1", $req->ip());
+    }
+
+    public function testRequestIpForwardedFor()
+    {
+        $req = new Bullet\Request();
+
+        unset($_SERVER['HTTP_CLIENT_IP']);
+        unset($_SERVER['REMOTE_ADDR']);
+        $_SERVER['HTTP_X_FORWARDED_FOR'] = "10.1.1.1, 172.16.1.1, 192.168.1.2, 127.0.0.1";
+
+        $this->assertEquals("127.0.0.1", $req->ip());
+    }
+
+    public function testRequestIpRemoteAddr()
+    {
+        $req = new Bullet\Request();
+
+        unset($_SERVER['HTTP_CLIENT_IP']);
+        unset($_SERVER['HTTP_X_FORWARDED_FOR']);
+        $_SERVER['REMOTE_ADDR'] = "192.168.1.3";
+
+        $this->assertEquals("192.168.1.3", $req->ip());
+    }
 }
 

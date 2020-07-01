@@ -1,7 +1,10 @@
 <?php
 namespace Bullet\Tests;
+use Bullet\App;
+use Bullet\Response\Sse;
+use PHPUnit\Framework\TestCase;
 
-class SseResponseTest extends \PHPUnit_Framework_TestCase
+class SseResponseTest extends TestCase
 {
     private $_testContent = [
         [
@@ -15,9 +18,9 @@ class SseResponseTest extends \PHPUnit_Framework_TestCase
 
     private function _runTestBulletApp($content)
     {
-        $app = new \Bullet\App();
+        $app = new App();
         $app->path('/test', function($request) use ($content) {
-            return new \Bullet\Response\Sse($content);
+            return new Sse($content);
         });
         $response = $app->run('GET', '/test');
         $this->assertInstanceOf('\Bullet\\Response\\Sse', $response);

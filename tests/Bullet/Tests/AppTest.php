@@ -1,13 +1,14 @@
 <?php
 namespace Bullet\Tests;
-use Bullet;
+use Bullet\App;
 use Bullet\Request;
 use Bullet\Response;
+use PHPUnit\Framework\TestCase;
 
 /**
  * @backupGlobals disabled
  */
-class AppTest extends \PHPUnit_Framework_TestCase
+class AppTest extends TestCase
 {
     protected $backupGlobalsBlacklist = array('app');
 
@@ -15,7 +16,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
     {
         $collect = array();
 
-        $app = new Bullet\App();
+        $app = new App();
         $app->path('test', function() use(&$collect) {
             $collect[] = 'test';
         });
@@ -28,7 +29,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
 
     public function testSingleResourceGet()
     {
-        $app = new Bullet\App();
+        $app = new App();
         $app->resource('test', function() {
             return 'resource';
         });
@@ -39,7 +40,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
 
     public function testMultiplePathsWithAray()
     {
-        $app = new Bullet\App();
+        $app = new App();
         $app->path(array('test', 'test2'), function() use($app) {
             return "test";
         });
@@ -53,7 +54,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
     {
         $collect = array();
 
-        $app = new Bullet\App();
+        $app = new App();
         $app->path('test', function($request) use($app, &$collect) {
             $collect[] = 'test';
             $app->path('foo', function() use(&$collect) {
@@ -74,7 +75,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
     {
         $collect = array();
 
-        $app = new Bullet\App();
+        $app = new App();
         $app->path('test', function($request) use($app, &$collect) {
             $app->path('foo', function() use(&$collect) {
                 return 'foo';
@@ -95,7 +96,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
     {
         $collect = array();
 
-        $app = new Bullet\App();
+        $app = new App();
         $app->path('test', function($request) use($app, &$collect) {
             $app->path('foo', function() use(&$collect) {
                 return 'foo';
@@ -114,7 +115,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
 
     public function test204HasNoBodyContent()
     {
-        $app = new Bullet\App();
+        $app = new App();
         $app->path('test-no-content', function($request) use($app) {
             $app->get(function($request) {
                 return 204;
@@ -130,7 +131,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
     {
         $collect = array();
 
-        $app = new Bullet\App();
+        $app = new App();
         $app->path('test', function($request) use($app, &$collect) {
             $collect[] = 'test';
             $app->path('foo', function() use($app, &$collect) {
@@ -154,7 +155,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
     {
         $collect = array();
 
-        $app = new Bullet\App();
+        $app = new App();
         $app->path('/', function($request) use($app, &$collect) {
             $collect[] = 'root';
         });
@@ -170,7 +171,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
 
     public function testExactPathMatchNotInParamCapture()
     {
-        $app = new Bullet\App();
+        $app = new App();
         $app->path('/ping', function($request) use($app) {
             $app->param('slug', function($request, $slug) use($app) {
                 return $slug;
@@ -185,7 +186,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
 
     public function testRepeatPathnameNested()
     {
-        $app = new Bullet\App();
+        $app = new App();
         $app->path('/about/', function($request) use ($app) {
             // return data for my "about" path
             return 'about';
@@ -204,7 +205,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
 
     public function testRepeatPathnameNestedPathInsideParam()
     {
-        $app = new Bullet\App();
+        $app = new App();
         $app->path('/about/', function($request) use ($app) {
             // return data for my "about" path
             return 'about';
@@ -227,7 +228,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
 
     public function testGetHandlerBeforeParamCapture()
     {
-        $app = new Bullet\App();
+        $app = new App();
         $app->path('/ping', function($request) use($app) {
             $app->get(function($request) use($app) {
                 return "pong";
@@ -246,7 +247,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
 
     public function testParamCallbacksGetClearedAfterMatch()
     {
-        $app = new Bullet\App();
+        $app = new App();
         $app->path('about', function() use ($app){
             $page = 'about';
             $app->get(function() use ($app,$page){
@@ -270,7 +271,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
 
     public function testDoubleSlugMethodHandler()
     {
-        $app = new Bullet\App();
+        $app = new App();
         $app->path('/ping', function($request) use($app) {
             $app->get(function($request) use($app) {
                 return "pong";
@@ -297,7 +298,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
     {
         $collect = array();
 
-        $app = new Bullet\App();
+        $app = new App();
         $app->path('/match/', function($request) use($app, &$collect) {
             $collect[] = 'matched';
             $app->path('/me/', function($request) use($app, &$collect) {
@@ -316,7 +317,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
 
     public function testHelperIsRequestPathReturnsTrueWhenPathIsCurrent()
     {
-        $app = new Bullet\App();
+        $app = new App();
         $app->path('test', function($request) use($app, &$collect) {
             return var_export($app->isRequestPath(), true);
         });
@@ -329,7 +330,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
     {
         $actual = array();
 
-        $app = new Bullet\App();
+        $app = new App();
         $app->path('foo', function($request) use($app, &$actual) {
             // Should be 'false' - "foo" is not the full requested path, "foo/bar" is
             $actual[] = var_export($app->isRequestPath(), true);
@@ -347,7 +348,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
     {
         $collect = array();
 
-        $app = new Bullet\App();
+        $app = new App();
         $app->path('test', function($request) use($app, &$collect) {
             return 'test';
         });
@@ -360,7 +361,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
 
     public function testOnlyLastMatchedCallbackIsReturned()
     {
-        $app = new Bullet\App();
+        $app = new App();
         $app->path('test', function($request) use($app) {
             $app->path('teapot', function($request) use($app) {
                 // GET
@@ -385,7 +386,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
     {
         $actual = array();
 
-        $app = new Bullet\App();
+        $app = new App();
         $app->path('test', function($request) use($app, &$actual) {
             $app->path('teapot', function($request) use($app, &$actual) {
                 // Should be executed
@@ -408,7 +409,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
     {
         $actual = array();
 
-        $app = new Bullet\App();
+        $app = new App();
         $app->path('test', function($request) use($app, &$actual) {
             $app->path('method', function($request) use($app, &$actual) {
                 // Should not be executed (not POST)
@@ -429,7 +430,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
 
     public function testIfPathExistsAndMethodCallbackDoesNotResponseIs405()
     {
-        $app = new Bullet\App();
+        $app = new App();
         $app->path('methodnotallowed', function($request) use($app) {
             // GET
             $app->get(function($request) use($app) {
@@ -448,7 +449,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
 
     public function testPathParamCaptureFirst()
     {
-        $app = new Bullet\App();
+        $app = new App();
         $app->path('paramtest', function($request) use($app) {
             // Digit
             $app->param('ctype_digit', function($request, $id) use($app) {
@@ -467,7 +468,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
 
     public function testPathParamCaptureSecond()
     {
-        $app = new Bullet\App();
+        $app = new App();
         $app->path('paramtest', function($request) use($app) {
             // Digit
             $app->param('ctype_digit', function($request, $id) use($app) {
@@ -486,7 +487,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
 
     public function testPathParamCaptureWithMethodHandlers()
     {
-        $app = new Bullet\App();
+        $app = new App();
         $app->path('paramtest', function($request) use($app) {
             // Digit
             $app->param('int', function($request, $id) use($app) {
@@ -514,7 +515,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
 
     public function testHandlersCanReturnIntergerAsHttpStatus()
     {
-        $app = new Bullet\App();
+        $app = new App();
         $app->path('testint', function() use($app) {
             return 200;
         });
@@ -526,7 +527,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
 
     public function testHandlersCanReturnIntergerAsHttpStatusInMethodCallback()
     {
-        $app = new Bullet\App();
+        $app = new App();
         $app->path('testint2', function() use($app) {
             // GET
             $app->get(function($request) use($app) {
@@ -541,7 +542,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
 
     public function testCustomHttpStatusHandler()
     {
-        $app = new Bullet\App();
+        $app = new App();
         $app->path('testhandler', function() use($app) {
             // GET
             $app->get(function($request) use($app) {
@@ -561,7 +562,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
 
     public function testCustomHttpStatusHandlerKeepingContent()
     {
-        $app = new Bullet\App();
+        $app = new App();
         $app->path('testhandler', function() use($app) {
             // GET
             $app->get(function($request) use($app) {
@@ -581,7 +582,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
 
     public function testPathExecutionIgnoresExtension()
     {
-        $app = new Bullet\App();
+        $app = new App();
         $app->path('test', function($request) use($app) {
             $collect[] = 'test';
             $app->path('foo', function() use($app) {
@@ -596,7 +597,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
 
     public function testPathWithExtensionExecutesMatchingFormatHandler()
     {
-        $app = new Bullet\App();
+        $app = new App();
         $app->path('test', function($request) use($app) {
             $collect[] = 'test';
             $app->path('foo', function() use($app) {
@@ -616,7 +617,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
 
     public function testPathWithExtensionAndFormatHandlersButNoMatchingFormatHandlerReturns406()
     {
-        $app = new Bullet\App();
+        $app = new App();
         $app->path('test', function($request) use($app) {
             $app->path('foo', function() use($app) {
                 $app->format('json', function() use($app) {
@@ -635,7 +636,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
 
     public function testFormatHanldersRunUsingAcceptHeader()
     {
-        $app = new Bullet\App();
+        $app = new App();
         $app->path('posts', function($request) use($app) {
             $app->get(function() use($app) {
                 $app->format('json', function() use($app) {
@@ -649,7 +650,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
             });
         });
 
-        $request = new Bullet\Request('POST', 'posts', array(), array('Accept' => 'application/json'));
+        $request = new Request('POST', 'posts', array(), array('Accept' => 'application/json'));
         $response = $app->run($request);
         $this->assertEquals(201, $response->status());
         $this->assertEquals('{"created":"something"}', $response->content());
@@ -657,7 +658,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
 
     public function testNestedRun()
     {
-        $app = new Bullet\App();
+        $app = new App();
         $app->path('foo', function($request) use($app) {
             return "foo";
         });
@@ -672,7 +673,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
 
     public function testUrlHelperReturnsCurrentPathWhenCalledWithNoArguments()
     {
-        $app = new Bullet\App();
+        $app = new App();
         $app->path('test', function($request) use($app) {
             $collect[] = 'test';
             $app->path('foo', function() use($app) {
@@ -687,7 +688,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
 
     public function testUrlHelperReturnsRelativePath()
     {
-        $app = new Bullet\App();
+        $app = new App();
         $app->path('test', function($request) use($app) {
             $collect[] = 'test';
             $app->path('foo', function() use($app) {
@@ -702,7 +703,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
 
     public function testUrlHelperReturnsRelativePathWithoutRepeating()
     {
-        $app = new Bullet\App();
+        $app = new App();
         $app->path('test', function($request) use($app) {
             $collect[] = 'test';
             $app->path('foo', function() use($app) {
@@ -717,7 +718,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
 
     public function testUrlHelperReturnsRelativePathWithoutRepeatingLastPortion()
     {
-        $app = new Bullet\App();
+        $app = new App();
         $app->path('test', function($request) use($app) {
             $app->path('foo', function() use($app) {
                 return $app->url('./foo'); // Should not be 'test/foo/foo'
@@ -731,7 +732,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
 
     public function testUrlHelperReturnsRelativePathWithoutRepeatingBasePath()
     {
-        $app = new Bullet\App();
+        $app = new App();
         $app->path('events', function($request) use($app) {
             return $app->url('./events/42'); // Should not be 'events/events/42' or just 'events'
         });
@@ -743,7 +744,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
 
     public function testUrlHelperReturnsGivenPath()
     {
-        $app = new Bullet\App();
+        $app = new App();
         $app->path('test', function($request) use($app) {
             $collect[] = 'test';
             $app->path('foo', function() use($app) {
@@ -761,7 +762,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
 
     public function testStatusOnResponseObjectReturnsCorrectStatus()
     {
-        $app = new Bullet\App();
+        $app = new App();
         $app->path('posts', function($request) use($app) {
             $app->post(function() use($app) {
                 return $app->response(201, 'Created something!');
@@ -774,7 +775,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
 
     public function testStatusOnResponseObjectReturnsCorrectStatusAsJSON()
     {
-        $app = new Bullet\App();
+        $app = new App();
         $app->path('posts', function($request) use($app) {
             $app->post(function() use($app) {
                 $app->format('json', function() use($app) {
@@ -789,7 +790,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
 
     public function testExceptionsAreCaughtWhenCustomHandlerIsRegistered()
     {
-        $app = new Bullet\App();
+        $app = new App();
         $app->on('Exception', function(Request $request, Response $response, \Exception $e) {
             if($e instanceof \Exception) {
                 $response->content('yep');
@@ -808,7 +809,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
 
     public function testExceptionHandlerAllowsStatusOtherThan500()
     {
-        $app = new Bullet\App();
+        $app = new App();
         $app->on('InvalidArgumentException', function(Request $request, Response $response, \Exception $e) {
             $response->status(200)->content('There is a pankake on my head. Your argument is invalid.');
         });
@@ -823,7 +824,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
 
     public function testEventHandlerBefore()
     {
-        $app = new Bullet\App();
+        $app = new App();
         $app->path('testhandler', function() use($app) {
             $app->post(function($request) use($app) {
                 return $request->foo;
@@ -841,7 +842,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
 
     public function testEventHandlerAfter()
     {
-        $app = new Bullet\App();
+        $app = new App();
         $app->path('testhandler', function() use($app) {
             $app->put(function($request) use($app) {
                 return 'test';
@@ -859,7 +860,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
 
     public function testHelperLoading()
     {
-        $app = new Bullet\App();
+        $app = new App();
         $app->helper('test', __NAMESPACE__ . '\TestHelper');
         $testHelper = $app->helper('test');
 
@@ -868,14 +869,14 @@ class AppTest extends \PHPUnit_Framework_TestCase
 
     public function testHelperThrowsExceptionForUnregisteredHelpers()
     {
-        $app = new Bullet\App();
+        $app = new App();
         $this->setExpectedException('InvalidArgumentException');
         $testHelper = $app->helper('nonexistent');
     }
 
     public function testSupportsPatch()
     {
-        $app = new Bullet\App();
+        $app = new App();
         $app->path('update', function($request) use($app) {
             $app->patch(function($request) {
                 return $request->params();
@@ -883,7 +884,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
         });
 
         $params = array('foo' => 'bar', 'bar' => 'baz');
-        $request = new \Bullet\Request('PATCH', '/update', $params);
+        $request = new Request('PATCH', '/update', $params);
         $result = $app->run($request);
 
         $this->assertEquals('PATCH', $request->method());
@@ -892,14 +893,14 @@ class AppTest extends \PHPUnit_Framework_TestCase
 
     public function testSupportsHeadAsGetWithNoResponseBody()
     {
-        $app = new Bullet\App();
+        $app = new App();
         $app->path('someroute', function($request) use($app) {
             $app->get(function($request) {
                 return 'I am hidden with a HEAD request!';
             });
         });
 
-        $request = new \Bullet\Request('HEAD', '/someroute');
+        $request = new Request('HEAD', '/someroute');
         $result = $app->run($request);
 
         $this->assertEquals('HEAD', $request->method());
@@ -908,7 +909,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
 
     public function testSupportsHeadWithHandler()
     {
-        $app = new Bullet\App();
+        $app = new App();
         $app->path('test', function($request) use($app) {
             $app->head(function($request) use($app) {
                 return $app->response()->header('X-Special', 'Stuff');
@@ -918,7 +919,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
             });
         });
 
-        $request = new \Bullet\Request('HEAD', '/test');
+        $request = new Request('HEAD', '/test');
         $response = $app->run($request);
         $this->assertEquals('HEAD', $request->method());
         $this->assertEquals('Stuff', $response->header('X-Special'));
@@ -927,7 +928,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
 
     public function testSupportCustomHeaders()
     {
-        $app = new Bullet\App();
+        $app = new App();
         $app->path('test', function($request) use($app) {
             $app->get(function($request) use($app) {
                 return $app->response()
@@ -937,7 +938,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
             });
         });
 
-        $request = new \Bullet\Request('GET', '/test');
+        $request = new Request('GET', '/test');
         $response = $app->run($request);
         $this->assertEquals('GET', $request->method());
         $this->assertEquals('Stuff', $response->header('X-Special'));
@@ -946,7 +947,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
 
     public function testSubdomainRoute()
     {
-        $app = new Bullet\App();
+        $app = new App();
         $app->subdomain('test', function($request) use($app) {
             $app->path('/', function($request) use($app) {
                 $app->get(function($request) {
@@ -955,7 +956,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
             });
         });
 
-        $request = new \Bullet\Request('GET', '/', array(), array('Host' => 'test.bulletphp.com'));
+        $request = new Request('GET', '/', array(), array('Host' => 'test.bulletphp.com'));
         $result = $app->run($request);
 
         $this->assertEquals(200, $result->status());
@@ -964,7 +965,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
 
     public function testSubdomainRouteAfterMethodHandler()
     {
-        $app = new Bullet\App();
+        $app = new App();
         $app->get(function($request) {
             return "GET main path";
         });
@@ -976,7 +977,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
             });
         });
 
-        $request = new \Bullet\Request('GET', '/', array(), array('Host' => 'bar.bulletphp.com'));
+        $request = new Request('GET', '/', array(), array('Host' => 'bar.bulletphp.com'));
         $result = $app->run($request);
 
         $this->assertEquals(200, $result->status());
@@ -985,7 +986,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
 
     public function testSubdomainRouteWithPathsWithNoRequestSubdomain()
     {
-        $app = new Bullet\App();
+        $app = new App();
         $app->subdomain('bar', function($request) use($app) {
             $app->path('/', function($request) use($app) {
                 $app->get(function($request) {
@@ -999,7 +1000,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
             });
         });
 
-        $request = new \Bullet\Request('GET', '/');
+        $request = new Request('GET', '/');
         $result = $app->run($request);
 
         $this->assertEquals(200, $result->status());
@@ -1008,7 +1009,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
 
     public function testSubdomainRouteArray()
     {
-        $app = new Bullet\App();
+        $app = new App();
         $app->subdomain(array('www', false), function($request) use($app) {
             $app->path('/', function($request) use($app) {
                 $app->get(function($request) {
@@ -1017,7 +1018,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
             });
         });
 
-        $request = new \Bullet\Request('GET', '/', array(), array('Host' => 'www.bulletphp.com'));
+        $request = new Request('GET', '/', array(), array('Host' => 'www.bulletphp.com'));
         $result = $app->run($request);
 
         $this->assertEquals(200, $result->status());
@@ -1026,7 +1027,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
 
     public function testSubdomainFalseRouteWithNoSubdomain()
     {
-        $app = new Bullet\App();
+        $app = new App();
         $app->subdomain(false, function($request) use($app) {
             $app->path('/', function($request) use($app) {
                 $app->get(function($request) {
@@ -1035,7 +1036,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
             });
         });
 
-        $request = new \Bullet\Request('GET', '/', array(), array('Host' => 'bulletphp.com'));
+        $request = new Request('GET', '/', array(), array('Host' => 'bulletphp.com'));
         $result = $app->run($request);
 
         $this->assertEquals(200, $result->status());
@@ -1044,7 +1045,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
 
     public function testDomainRoute()
     {
-        $app = new Bullet\App();
+        $app = new App();
         $app->domain('example.com', function($request) use($app) {
             $app->path('/', function($request) use($app) {
                 $app->get(function($request) {
@@ -1053,7 +1054,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
             });
         });
 
-        $request = new \Bullet\Request('GET', '/', array(), array('Host' => 'www.example.com'));
+        $request = new Request('GET', '/', array(), array('Host' => 'www.example.com'));
         $result = $app->run($request);
 
         $this->assertEquals(200, $result->status());
@@ -1062,7 +1063,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
 
     public function testDomainRoute404()
     {
-        $app = new Bullet\App();
+        $app = new App();
         $app->domain('example.com', function($request) use($app) {
             $app->path('/', function($request) use($app) {
                 $app->get(function($request) {
@@ -1071,7 +1072,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
             });
         });
 
-        $request = new \Bullet\Request('GET', '/', array(), array('Host' => 'www.example2.com'));
+        $request = new Request('GET', '/', array(), array('Host' => 'www.example2.com'));
         $result = $app->run($request);
 
         $this->assertEquals(404, $result->status());
@@ -1079,7 +1080,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
 
     public function testDomainRoute404OnRequestedDomain()
     {
-        $app = new Bullet\App();
+        $app = new App();
         $app->domain('example.com', function($request) use($app) {
             $app->path('/goodpath', function($request) use($app) {
                 $app->get(function($request) {
@@ -1088,7 +1089,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
             });
         });
 
-        $request = new \Bullet\Request('GET', '/badpath', array(), array('Host' => 'www.example.com'));
+        $request = new Request('GET', '/badpath', array(), array('Host' => 'www.example.com'));
         $result = $app->run($request);
 
         $this->assertEquals(404, $result->status());
@@ -1097,12 +1098,12 @@ class AppTest extends \PHPUnit_Framework_TestCase
 
     public function testDefaultArrayToJSONContentConverter()
     {
-        $app = new Bullet\App();
+        $app = new App();
         $app->path('/', function($request) use($app) {
             return array('foo' => 'bar');
         });
 
-        $request = new \Bullet\Request('GET', '/');
+        $request = new Request('GET', '/');
         $result = $app->run($request);
 
         $this->assertEquals(json_encode(array('foo' => 'bar')), $result->content());
@@ -1111,12 +1112,12 @@ class AppTest extends \PHPUnit_Framework_TestCase
 
     public function testResponseWithNoContentConverterIsUnchanged()
     {
-        $app = new Bullet\App();
+        $app = new App();
         $app->path('/', function($request) use($app) {
             return 'foobar';
         });
 
-        $request = new \Bullet\Request('GET', '/');
+        $request = new Request('GET', '/');
         $result = $app->run($request);
 
         $this->assertEquals('foobar', $result->content());
@@ -1125,7 +1126,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
 
     public function testResponseOfSpecificClassGetsConverted()
     {
-        $app = new Bullet\App();
+        $app = new App();
         $app->path('/', function($request) use($app) {
             return new TestHelper();
         });
@@ -1140,7 +1141,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
             }
         );
 
-        $request = new \Bullet\Request('GET', '/');
+        $request = new Request('GET', '/');
         $result = $app->run($request);
 
         $this->assertEquals('something', $result->content());
@@ -1149,7 +1150,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
 
     public function testThatAllApplicableResponseHandlersAreApplied()
     {
-        $app = new Bullet\App();
+        $app = new App();
         $app->path('/', function($request) use($app) {
             return 'a';
         });
@@ -1182,7 +1183,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
             }
         );
 
-        $request = new \Bullet\Request('GET', '/');
+        $request = new Request('GET', '/');
         $result = $app->run($request);
 
         $this->assertEquals('abc', $result->content());
@@ -1190,7 +1191,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
 
     public function testThatUserResponseHandlersOverrideDefaults()
     {
-        $app = new Bullet\App();
+        $app = new App();
         $app->path('/', function($request) use($app) {
             return array('a');
         });
@@ -1206,7 +1207,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
             'array_json'
         );
 
-        $request = new \Bullet\Request('GET', '/');
+        $request = new Request('GET', '/');
         $result = $app->run($request);
 
         $this->assertEquals('this is not json', $result->content());
@@ -1219,7 +1220,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
      */
     public function testThatResponseHandlerNamesMustBeAString()
     {
-        $app = new Bullet\App();
+        $app = new App();
         $app->registerResponseHandler(
             function($response) { return true; },
             function($response) {},
@@ -1229,14 +1230,14 @@ class AppTest extends \PHPUnit_Framework_TestCase
 
     public function testThatDefaultResponseHandlerMayBeRemoved()
     {
-        $app = new Bullet\App();
+        $app = new App();
         $app->path('/', function($request) use($app) {
             return array('a');
         });
 
         $app->removeResponseHandler('array_json');
 
-        $request = new \Bullet\Request('GET', '/');
+        $request = new Request('GET', '/');
         $result = $app->run($request);
 
         $this->assertEquals(array('a'), $result->content());
@@ -1244,11 +1245,11 @@ class AppTest extends \PHPUnit_Framework_TestCase
 
     public function testThatUserResponseHandlersMayBeRemoved()
     {
-        $app = new Bullet\App();
+        $app = new App();
         $app->path('/', function($request) use($app) {
             return 'foo';
         });
-        $request = new \Bullet\Request('GET', '/');
+        $request = new Request('GET', '/');
 
         $app->registerResponseHandler(
             function() { return true; },
@@ -1268,11 +1269,11 @@ class AppTest extends \PHPUnit_Framework_TestCase
 
     public function testThatIndexedResponseHandlersMayBeRemoved()
     {
-        $app = new Bullet\App();
+        $app = new App();
         $app->path('/', function($request) use($app) {
             return 'foo';
         });
-        $request = new \Bullet\Request('GET', '/');
+        $request = new Request('GET', '/');
 
         $app->registerResponseHandler(
             function() { return true; },
@@ -1291,7 +1292,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
 
     public function testNestedRoutesInsideParamCallback()
     {
-        $app = new Bullet\App();
+        $app = new App();
 
         $app->path('admin', function($request) use($app) {
             $app->path('client', function($request) use($app) {
@@ -1313,7 +1314,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
 
     public function testHMVCNestedRouting()
     {
-        $app = new Bullet\App();
+        $app = new App();
 
         $app->path('a', function($request) use($app) {
             $app->path('b', function($request) use($app) {
@@ -1336,7 +1337,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
 
     public function testHMVCNestedRoutingWithSubdomain()
     {
-        $app = new Bullet\App();
+        $app = new App();
 
         $app->subdomain('test', function($request) use($app) {
             $app->path('a', function($request) use($app) {
@@ -1348,7 +1349,7 @@ class AppTest extends \PHPUnit_Framework_TestCase
             $app->path('c', function($request) use($app) {
                 $app->path('a', function($request) use($app) {
                     $app->path('b', function($request) use($app) {
-                        $request = new \Bullet\Request('GET', 'a/b', array(), array('Host' => 'test.bulletphp.com'));
+                        $request = new Request('GET', 'a/b', array(), array('Host' => 'test.bulletphp.com'));
                         $a = $app->run($request);
                         return $a->content() . " + c/a/b";
                     });
@@ -1356,14 +1357,14 @@ class AppTest extends \PHPUnit_Framework_TestCase
             });
         });
 
-        $request = new \Bullet\Request('GET', 'c/a/b', array(), array('Host' => 'test.bulletphp.com'));
+        $request = new Request('GET', 'c/a/b', array(), array('Host' => 'test.bulletphp.com'));
         $result = $app->run($request);
         $this->assertEquals('a/b + c/a/b', $result->content());
     }
 
     public function testClosureBinding()
     {
-        $app = new Bullet\App();
+        $app = new App();
 
         $app->path('closure-binding', function($request) {
             return $this->url('/worked/');

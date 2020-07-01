@@ -1,11 +1,12 @@
 <?php
 namespace Bullet\Tests;
-use Bullet;
+use Bullet\Response;
+use PHPUnit\Framework\TestCase;
 
 /**
  * Unit tests for \Bullet\Response.
  */
-class ResponseTest extends \PHPUnit_Framework_TestCase
+class ResponseTest extends TestCase
 {
     /**
      * @var \Bullet\Response Subject under test
@@ -17,7 +18,7 @@ class ResponseTest extends \PHPUnit_Framework_TestCase
      */
     protected function setUp()
     {
-        $this->response = new Bullet\Response();
+        $this->response = new Response();
     }
 
     /**

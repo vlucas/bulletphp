@@ -1,11 +1,14 @@
 <?php
 namespace Bullet\Tests\View;
-use Bullet;
+use Bullet\App;
+use Bullet\Request;
+use Bullet\Response;
 use Bullet\View\Template;
+use PHPUnit\Framework\TestCase;
 
-class TemplateTest extends \PHPUnit_Framework_TestCase
+class TemplateTest extends TestCase
 {
-    public function setUp()
+    protected function setUp()
     {
         $this->templateDir = dirname(dirname(dirname(__DIR__))) . '/fixtures/templates/';
 
@@ -18,7 +21,7 @@ class TemplateTest extends \PHPUnit_Framework_TestCase
         ));
     }
 
-    public function tearDown()
+    protected function tearDown()
     {
         // Restore config to original state
         Template::config($this->oldConfig);
@@ -96,7 +99,7 @@ class TemplateTest extends \PHPUnit_Framework_TestCase
 
     public function testTemplateHelperReturnsTemplateObjectInstance()
     {
-        $app = new Bullet\App(array(
+        $app = new App(array(
             'template.cfg' => array('path' => $this->templateDir)
         ));
         $app->path('template-test', function($request) use($app) {
@@ -132,7 +135,7 @@ class TemplateTest extends \PHPUnit_Framework_TestCase
      */
     public function testExceptionThrownInTemplate()
     {
-        $app = new Bullet\App();
+        $app = new App();
         $app->path('test', function() use($app) {
             return $app->template('exception');
         });
@@ -148,7 +151,7 @@ class TemplateTest extends \PHPUnit_Framework_TestCase
 
     public function testTemplateDoesNotDoubleRender()
     {
-        $app = new Bullet\App();
+        $app = new App();
         $app->path('renderCount', function($request) use($app) {
             return $app->template('renderCount');
         });
@@ -159,7 +162,7 @@ class TemplateTest extends \PHPUnit_Framework_TestCase
 
     public function testTemplateRenderCacheCanBeCleared()
     {
-        $app = new Bullet\App();
+        $app = new App();
         $app->path('renderCount', function($request) use($app) {
             $tpl = $app->template('renderCount');
             $rendered = $tpl->content();
@@ -174,12 +177,12 @@ class TemplateTest extends \PHPUnit_Framework_TestCase
     {
         Template::config(array('path_layouts' => $this->templateDir . 'layouts/'));
 
-        $app = new Bullet\App();
+        $app = new App();
         $app->path('variableSet', function($request) use($app) {
             return $app->template('variableSet', array('variable' => 'one'))
                 ->layout('div');
         });
-        $app->on('beforeResponseHandler', function(\Bullet\Request $request, \Bullet\Response $response, $rawResponse) use($app) {
+        $app->on('beforeResponseHandler', function(Request $request, Response $response, $rawResponse) use($app) {
             $rawResponse->set('variable', 'two')->layout(false);
         });
         $res = $app->run('GET', '/variableSet/');

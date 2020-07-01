@@ -1,16 +1,19 @@
 <?php
 namespace Bullet\Tests;
+use Bullet\App;
+use Bullet\Response\Chunked;
+use PHPUnit\Framework\TestCase;
 
-class ChunkedTest extends \PHPUnit_Framework_TestCase
+class ChunkedTest extends TestCase
 {
     private $_testContent = [
         "The", " ", "quick", " brown", " fox ", "jumps", " over ", "the ",
         "lazy ", "dog."
     ];
     private function _runTestBulletApp($chunkSize, $content) {
-        $app = new \Bullet\App();
+        $app = new App();
         $app->path('/test', function($request) use ($chunkSize, $content) {
-            $c = new \Bullet\Response\Chunked($content);
+            $c = new Chunked($content);
             $c->chunkSize = $chunkSize;
             return $c;
         });

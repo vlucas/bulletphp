@@ -1,42 +1,44 @@
 <?php
 namespace Bullet\Tests;
-use Bullet;
+use Bullet\App;
+use Bullet\Request;
+use PHPUnit\Framework\TestCase;
 
-class RequestTest extends \PHPUnit_Framework_TestCase
+class RequestTest extends TestCase
 {
     function testMethod()
     {
-        $r = new Bullet\Request('POST', '/foo/bar');
+        $r = new Request('POST', '/foo/bar');
         $this->assertEquals('POST', $r->method());
     }
 
     function testMethodSupportsPatch()
     {
-        $r = new Bullet\Request('PATCH', '/foo/bar');
+        $r = new Request('PATCH', '/foo/bar');
         $this->assertEquals('PATCH', $r->method());
     }
 
     function testUrl()
     {
-        $r = new Bullet\Request('DELETE', '/foo/bar/');
+        $r = new Request('DELETE', '/foo/bar/');
         $this->assertEquals('/foo/bar/', $r->url());
     }
 
     function testFormatDefaultsToNull()
     {
-        $r = new Bullet\Request('DELETE', '/foo/bar/');
+        $r = new Request('DELETE', '/foo/bar/');
         $this->assertEquals(null, $r->format());
     }
 
     function testExtensionOverridesAcceptHeader()
     {
-        $r = new Bullet\Request('PUT', '/users/42.xml', array(), array('Accept' => 'text/html,application/json'));
+        $r = new Request('PUT', '/users/42.xml', array(), array('Accept' => 'text/html,application/json'));
         $this->assertEquals('xml', $r->format());
     }
 
     function testAccept()
     {
-        $r = new Bullet\Request('', '', array(), array('Accept' => 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8,application/json'));
+        $r = new Request('', '', array(), array('Accept' => 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8,application/json'));
         $this->assertTrue($r->accept('html'));
         $this->assertTrue($r->accept('xhtml'));
         $this->assertTrue($r->accept('xml'));
@@ -46,7 +48,7 @@ class RequestTest extends \PHPUnit_Framework_TestCase
 
     function testAcceptHeader()
     {
-        $r = new Bullet\Request('', '', array(), array('Accept' => 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8,application/json'));
+        $r = new Request('', '', array(), array('Accept' => 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8,application/json'));
         $this->assertEquals(array(
           "text/html" => "text/html",
           "application/xhtml+xml" => "application/xhtml+xml",
@@ -58,9 +60,9 @@ class RequestTest extends \PHPUnit_Framework_TestCase
 
     function testAcceptHeaderOverridesDefaultHtmlInApp()
     {
-        $app = new Bullet\App();
+        $app = new App();
         // Accept only JSON and request URL with no extension
-        $req = new Bullet\Request('PUT', '/foo', array(), array('Accept' => 'application/json'));
+        $req = new Request('PUT', '/foo', array(), array('Accept' => 'application/json'));
         $app->path('foo', function($request) use($app) {
             $app->format('json', function($request) {
                 return array('foo' => 'bar');
@@ -77,9 +79,9 @@ class RequestTest extends \PHPUnit_Framework_TestCase
 
     function testAcceptAnyReturnsFirstFormat()
     {
-        $app = new Bullet\App();
+        $app = new App();
         // Accept only JSON and request URL with no extension
-        $req = new Bullet\Request('GET', '/foo', array(), array('Accept' => '*/*'));
+        $req = new Request('GET', '/foo', array(), array('Accept' => '*/*'));
         $app->path('foo', function($request) use($app) {
             $app->format('json', function($request) {
                 return array('foo' => 'bar');
@@ -96,9 +98,9 @@ class RequestTest extends \PHPUnit_Framework_TestCase
 
     function testAcceptEmptyReturnsFirstFormat()
     {
-        $app = new Bullet\App();
+        $app = new App();
         // Accept only JSON and request URL with no extension
-        $req = new Bullet\Request('GET', '/foo', array());
+        $req = new Request('GET', '/foo', array());
         $app->path('foo', function($request) use($app) {
             $app->format('json', function($request) {
                 return array('foo' => 'bar');
@@ -111,32 +113,32 @@ class RequestTest extends \PHPUnit_Framework_TestCase
 
     function testRawUrlencodedBodyIsDecodedInPutRequest()
     {
-        $r = new Bullet\Request('PUT', '/users/123.json', array(), array('Accept' => 'application/json'), 'id=123&foo=bar&bar=bar+baz');
+        $r = new Request('PUT', '/users/123.json', array(), array('Accept' => 'application/json'), 'id=123&foo=bar&bar=bar+baz');
         $this->assertEquals('123', $r->id);
         $this->assertEquals('bar baz', $r->bar);
     }
 
     function testRawJsonBodyIsDecodedInPutRequest()
     {
-        $r = new Bullet\Request('PUT', '/users/42.json', array(), array('Accept' => 'application/json'), '{"id":"123"}');
+        $r = new Request('PUT', '/users/42.json', array(), array('Accept' => 'application/json'), '{"id":"123"}');
         $this->assertEquals('123', $r->id);
     }
 
     function testRawJsonBodyIsDecodedInPostRequest()
     {
-        $r = new Bullet\Request('POST', '/users/129.json', array(), array('Accept' => 'application/json'), '{"id":"124"}');
+        $r = new Request('POST', '/users/129.json', array(), array('Accept' => 'application/json'), '{"id":"124"}');
         $this->assertEquals('124', $r->id);
     }
 
     function testRawJsonBodyIsIgnoredInPostRequestIfPostParamsAreSet()
     {
-        $r = new Bullet\Request('POST', '/users/129.json', array('id' => '123'), array('Accept' => 'application/json'), '{"id":"124"}');
+        $r = new Request('POST', '/users/129.json', array('id' => '123'), array('Accept' => 'application/json'), '{"id":"124"}');
         $this->assertEquals('123', $r->id);
     }
 
     function testGetWithParamsAreSetInQuerystringData()
     {
-        $r = new Bullet\Request('GET', '/users/129.json', array('id' => '124', 'foo' => 'bar'));
+        $r = new Request('GET', '/users/129.json', array('id' => '124', 'foo' => 'bar'));
         $this->assertEquals('124', $r->query('id'));
         $this->assertEquals('bar', $r->query('foo'));
         $this->assertEquals(array('id' => '124', 'foo' => 'bar'), $r->query());
@@ -144,51 +146,51 @@ class RequestTest extends \PHPUnit_Framework_TestCase
 
     function testPostWithParamsAreSetInPostData()
     {
-        $r = new Bullet\Request('POST', '/users/129.json', array('id' => '124', 'foo' => 'bar'));
+        $r = new Request('POST', '/users/129.json', array('id' => '124', 'foo' => 'bar'));
         $this->assertEquals('124', $r->post('id'));
         $this->assertEquals('bar', $r->post('foo'));
     }
 
     function testRawJsonBodyWithSpacesInValueIsDecodedInPutRequest()
     {
-        $r = new Bullet\Request('PUT', '/users/42.json', array(), array('Accept' => 'application/json'), '{"foo":"bar baz"}');
+        $r = new Request('PUT', '/users/42.json', array(), array('Accept' => 'application/json'), '{"foo":"bar baz"}');
         $this->assertEquals('bar baz', $r->foo);
     }
 
     function testRawJsonBodyWithSpacesInKeyIsDecodedInPutRequest()
     {
-        $r = new Bullet\Request('PUT', '/users/42.json', array(), array('Accept' => 'application/json'), '{"foo bar":"baz"}');
+        $r = new Request('PUT', '/users/42.json', array(), array('Accept' => 'application/json'), '{"foo bar":"baz"}');
         $this->assertEquals('baz', $r->{'foo bar'});
     }
 
     function testRawJsonBodyWithSpacesInKeyAndValueIsDecodedInPutRequest()
     {
-        $r = new Bullet\Request('PUT', '/users/42.json', array(), array('Accept' => 'application/json'), '{"foo bar":"bar baz"}');
+        $r = new Request('PUT', '/users/42.json', array(), array('Accept' => 'application/json'), '{"foo bar":"bar baz"}');
         $this->assertEquals('bar baz', $r->{'foo bar'});
     }
 
     function testRawJsonBodyWithDotsInValueIsDecodedInPutRequest()
     {
-        $r = new Bullet\Request('PUT', '/users/42.json', array(), array('Accept' => 'application/json'), '{"link":"http://bulletphp.com/"}');
+        $r = new Request('PUT', '/users/42.json', array(), array('Accept' => 'application/json'), '{"link":"http://bulletphp.com/"}');
         $this->assertEquals('http://bulletphp.com/', $r->link);
     }
 
     function testRawJsonBodyWithDotsInKeyIsDecodedInPutRequest()
     {
-        $r = new Bullet\Request('PUT', '/users/42.json', array(), array('Accept' => 'application/json'), '{"the.link":"bulletphp"}');
+        $r = new Request('PUT', '/users/42.json', array(), array('Accept' => 'application/json'), '{"the.link":"bulletphp"}');
         $this->assertEquals('bulletphp', $r->{'the.link'});
     }
 
     function testRawJsonBodyWithDotsInKeyAndValueIsDecodedInPutRequest()
     {
-        $r = new Bullet\Request('PUT', '/users/42.json', array(), array('Accept' => 'application/json'), '{"the.link":"http://bulletphp.com"}');
+        $r = new Request('PUT', '/users/42.json', array(), array('Accept' => 'application/json'), '{"the.link":"http://bulletphp.com"}');
         $this->assertEquals('http://bulletphp.com', $r->{'the.link'});
     }
 
     function testRawJsonBodyIsDecodedWithBadJSON()
     {
-        $r = new Bullet\Request('PUT', '/test', array(), array('Content-Type' => 'application/json'), '{\"title\":\"Updated New Post Title\",\"body\":\"<p>A much better post body</p>\"}\n');
-        $app = new Bullet\App();
+        $r = new Request('PUT', '/test', array(), array('Content-Type' => 'application/json'), '{\"title\":\"Updated New Post Title\",\"body\":\"<p>A much better post body</p>\"}\n');
+        $app = new App();
         $app->path('test', function($request) use($app) {
             $app->put(function($request) {
                 return 'title: ' . $request->get('title');
@@ -200,20 +202,20 @@ class RequestTest extends \PHPUnit_Framework_TestCase
 
     function testSubdomainCapture()
     {
-        $r = new Bullet\Request('GET', '/', array(), array('Host' => 'test.bulletphp.com'));
+        $r = new Request('GET', '/', array(), array('Host' => 'test.bulletphp.com'));
         $this->assertEquals('test', $r->subdomain());
     }
 
     function testSubdomainCaptureWithNoSubdomain()
     {
-        $r = new Bullet\Request('GET', '/', array(), array('Host' => 'bulletphp.com'));
+        $r = new Request('GET', '/', array(), array('Host' => 'bulletphp.com'));
         $this->assertFalse($r->subdomain());
     }
 
     function testOptionsHeader()
     {
-        $app = new Bullet\App();
-        $req = new Bullet\Request('OPTIONS', '/test');
+        $app = new App();
+        $req = new Request('OPTIONS', '/test');
         $app->path('test', function($request) use($app) {
             $app->get(function($request) {
                 return 'GET';
@@ -229,8 +231,8 @@ class RequestTest extends \PHPUnit_Framework_TestCase
 
     function testOptionsHeaderForParamPaths()
     {
-        $app = new Bullet\App();
-        $req = new Bullet\Request('OPTIONS', '/test/this_is_a_slug');
+        $app = new App();
+        $req = new Request('OPTIONS', '/test/this_is_a_slug');
         $app->path('test', function($request) use($app) {
             $app->param('slug', function($request, $param) use ($app) {
                 $app->get(function($request) {
@@ -248,8 +250,8 @@ class RequestTest extends \PHPUnit_Framework_TestCase
 
     function testOptionsHeaderWithCustomOptionsRoute()
     {
-        $app = new Bullet\App();
-        $req = new Bullet\Request('OPTIONS', '/test');
+        $app = new App();
+        $req = new Request('OPTIONS', '/test');
         $app->path('test', function($request) use($app) {
             $app->get(function($request) {
                 return 'GET';
@@ -268,8 +270,8 @@ class RequestTest extends \PHPUnit_Framework_TestCase
 
     function testCacheHeaderFalse()
     {
-        $app = new Bullet\App();
-        $req = new Bullet\Request('GET', '/cache');
+        $app = new App();
+        $req = new Request('GET', '/cache');
         $app->path('cache', function($request) use($app) {
             $app->get(function($request) use($app) {
                 return $app->response(200, 'CONTENT')->cache(false);
@@ -282,8 +284,8 @@ class RequestTest extends \PHPUnit_Framework_TestCase
 
     function testCacheHeaderTime()
     {
-        $app = new Bullet\App();
-        $req = new Bullet\Request('GET', '/cache');
+        $app = new App();
+        $req = new Request('GET', '/cache');
         $currentTime = time();
         $cacheTime = strtotime('+1 hour', $currentTime);
         $app->path('cache', function($request) use($app, $cacheTime) {
@@ -299,8 +301,8 @@ class RequestTest extends \PHPUnit_Framework_TestCase
 
     function testCacheWithDateTimeObject()
     {
-        $app = new Bullet\App();
-        $req = new Bullet\Request('GET', '/cache');
+        $app = new App();
+        $req = new Request('GET', '/cache');
         $currentTime = time();
         $cacheTime = new \DateTime('+1 hour');
         $app->path('cache', function($request) use($app, $cacheTime) {
@@ -316,8 +318,8 @@ class RequestTest extends \PHPUnit_Framework_TestCase
 
     function testCacheWithString()
     {
-        $app = new Bullet\App();
-        $req = new Bullet\Request('GET', '/cache');
+        $app = new App();
+        $req = new Request('GET', '/cache');
         $currentTime = time();
         $cacheTime = '1 hour';
         $app->path('cache', function($request) use($app, $cacheTime) {
@@ -333,8 +335,8 @@ class RequestTest extends \PHPUnit_Framework_TestCase
 
     function testCacheWithSeconds()
     {
-        $app = new Bullet\App();
-        $req = new Bullet\Request('GET', '/cache');
+        $app = new App();
+        $req = new Request('GET', '/cache');
         $currentTime = time();
         $cacheTime = 3600;
         $app->path('cache', function($request) use($app, $cacheTime) {
@@ -350,27 +352,27 @@ class RequestTest extends \PHPUnit_Framework_TestCase
 
     function testGetWithQueryString()
     {
-        $app = new Bullet\App();
+        $app = new App();
         $app->path('test', function($request) use($app) {
             $app->get(function($request) {
                 return 'foo=' . $request->foo;
             });
         });
-        $req = new Bullet\Request('GET', '/test?foo=bar');
+        $req = new Request('GET', '/test?foo=bar');
         $res = $app->run($req);
         $this->assertEquals('foo=bar', $res->content());
     }
 
     public function testRequestsDoNotShareParams()
     {
-        $first_request  = new Bullet\Request('GET', '/', array('foo' => 'bar'));
-        $second_request = new Bullet\Request('GET', '/', array());
+        $first_request  = new Request('GET', '/', array('foo' => 'bar'));
+        $second_request = new Request('GET', '/', array());
         $this->assertNull($second_request->foo);
     }
 
     public function testRequestIpClientId()
     {
-        $req = new Bullet\Request();
+        $req = new Request();
 
         unset($_SERVER['REMOTE_ADDR']);
         unset($_SERVER['HTTP_X_FORWARDED_FOR']);
@@ -381,7 +383,7 @@ class RequestTest extends \PHPUnit_Framework_TestCase
 
     public function testRequestIpForwardedFor()
     {
-        $req = new Bullet\Request();
+        $req = new Request();
 
         unset($_SERVER['HTTP_CLIENT_IP']);
         unset($_SERVER['REMOTE_ADDR']);
@@ -392,7 +394,7 @@ class RequestTest extends \PHPUnit_Framework_TestCase
 
     public function testRequestIpRemoteAddr()
     {
-        $req = new Bullet\Request();
+        $req = new Request();
 
         unset($_SERVER['HTTP_CLIENT_IP']);
         unset($_SERVER['HTTP_X_FORWARDED_FOR']);

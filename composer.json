@@ -20,8 +20,8 @@
         "phpunit/phpunit": "~5.7"
     },
     "autoload": {
-        "psr-0": {
-            "Bullet": "src/"
+        "psr-4": {
+            "Bullet\\": "src/Bullet"
         }
     }
 }

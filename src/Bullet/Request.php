@@ -70,7 +70,7 @@ class Request
     public function __construct($method = null, $url = null, array $params = array(), array $headers = array(), $rawBody = null)
     {
         // Die magic_quotes, just die...
-        if(get_magic_quotes_gpc()) {
+        if(function_exists('get_magic_quotes_gpc') === false) {
             $stripslashes_gpc = function(&$value, $key) {
                 $value = stripslashes($value);
             };
@@ -705,7 +705,7 @@ class Request
 
     /**
      * Try to decode the raw request body as JSON and return it
-     * 
+     *
      * This method calls json_decode on raw() each time it's called,
      * so don't overindulge.
      */
@@ -834,12 +834,12 @@ class Request
             || $op != ''
             || strpos($ua, 'iphone') !== false
             || strpos($ua, 'android') !== false
-            || strpos($ua, 'iemobile') !== false 
+            || strpos($ua, 'iemobile') !== false
             || strpos($ua, 'kindle') !== false
-            || strpos($ua, 'sony') !== false 
-            || strpos($ua, 'symbian') !== false 
-            || strpos($ua, 'nokia') !== false 
-            || strpos($ua, 'samsung') !== false 
+            || strpos($ua, 'sony') !== false
+            || strpos($ua, 'symbian') !== false
+            || strpos($ua, 'nokia') !== false
+            || strpos($ua, 'samsung') !== false
             || strpos($ua, 'mobile') !== false
             || strpos($ua, 'windows ce') !== false
             || strpos($ua, 'epoc') !== false
@@ -942,7 +942,7 @@ class Request
 
     /**
      * Is this a Flash request?
-     * 
+     *
      * @return bool
      */
     public function isFlash()

@@ -1,11 +1,11 @@
 <?php
 namespace Bullet\Tests\View;
-use Bullet;
 use Bullet\View\Template;
+use PHPUnit\Framework\TestCase;
 
-class BlockTest extends \PHPUnit_Framework_TestCase
+class BlockTest extends TestCase
 {
-    public function setUp()
+    protected function setUp()
     {
         $this->templateDir = dirname(dirname(dirname(__DIR__))) . '/fixtures/templates/';
 
@@ -18,7 +18,7 @@ class BlockTest extends \PHPUnit_Framework_TestCase
         ));
     }
 
-    public function tearDown()
+    protected function tearDown()
     {
         // Restore config to original state
         Template::config($this->oldConfig);
@@ -50,12 +50,12 @@ class BlockTest extends \PHPUnit_Framework_TestCase
     {
         $tpl = new Template('test');
         $tpl->layout('layouts/block');
-        $block = $tpl->block('js')->content(function() { })
+        $tpl->block('js')->content(function() { })
             ->append(function() { echo 'Content'; });
         $this->assertEquals("Content<div><p>Test</p></div>", $tpl->content());
     }
 
-    public function testBlockPreppend()
+    public function testBlockPrepend()
     {
         $tpl = new Template('block');
         $block = $tpl->block(__FUNCTION__)->prepend(function() { echo "Test"; });
@@ -74,7 +74,7 @@ class BlockTest extends \PHPUnit_Framework_TestCase
     {
         $tpl = new Template('test');
         $tpl->layout('layouts/block');
-        $block = $tpl->block('js')->content(function() { })
+        $tpl->block('js')->content(function() { })
             ->prepend(function() { echo 'Content'; });
         $this->assertEquals("Content<div><p>Test</p></div>", $tpl->content());
     }
